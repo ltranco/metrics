@@ -1,5 +1,4 @@
 {
-  "id": null,
   "uid": "my-life",
   "title": "My Life",
   "description": "Personal metrics from HealthKit via iOS Shortcuts, stored in VictoriaMetrics on the Linode. Top row is pinned to the current Mon-Su week; everything below follows the time picker.",
@@ -15,21 +14,6 @@
     "from": "now-30d",
     "to": "now"
   },
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
-  },
-  "templating": { "list": [] },
-  "links": [],
   "panels": [
     {
       "id": 100,
