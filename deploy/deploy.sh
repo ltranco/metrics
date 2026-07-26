@@ -10,13 +10,15 @@ APP_DIR="/opt/metrics"
 DOMAIN="metrics.ltran.co"
 EMAIL="linode@ltran.co"
 
-sudo mkdir -p $APP_DIR
-
+# $APP_DIR and /opt/metrics-repo are created once by root and chowned to the
+# deploy user -- its sudoers allowlist has no mkdir, and /opt is root-owned.
 # Secrets are placed by hand once; never committed, never touched by CI.
 if [ ! -f $APP_DIR/.env ]; then
-    echo "ERROR: $APP_DIR/.env is missing."
-    echo "  printf 'INGEST_TOKEN=%s\\n' \"\$(openssl rand -hex 24)\" | sudo tee $APP_DIR/.env"
-    echo "  sudo chmod 600 $APP_DIR/.env"
+    echo "ERROR: $APP_DIR/.env is missing. As root, one time:"
+    echo "  mkdir -p $APP_DIR /opt/metrics-repo"
+    echo "  chown deploy:deploy $APP_DIR /opt/metrics-repo"
+    echo "  printf 'INGEST_TOKEN=%s\\n' \"\$(openssl rand -hex 24)\" > $APP_DIR/.env"
+    echo "  chown deploy:deploy $APP_DIR/.env && chmod 600 $APP_DIR/.env"
     exit 1
 fi
 
@@ -44,7 +46,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 echo "Deploying application..."
-sudo cp $REPO_DIR/deploy/docker-compose.prod.yml $APP_DIR/docker-compose.yml
+cp $REPO_DIR/deploy/docker-compose.prod.yml $APP_DIR/docker-compose.yml
 
 cd $APP_DIR
 export DOCKER_IMAGE=${DOCKER_IMAGE:-ghcr.io/$GITHUB_REPO:latest}
