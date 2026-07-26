@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  go:
+    name: Vet and build shim
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: shim/go.mod
+
+      - name: Vet
+        working-directory: ./shim
+        run: go vet ./...
+
+      - name: Build
+        working-directory: ./shim
+        run: go build ./...

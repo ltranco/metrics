@@ -1,0 +1,36 @@
+services:
+  victoriametrics:
+    # Pin to a specific tag once you've confirmed what `latest` resolves to.
+    image: victoriametrics/victoria-metrics:latest
+    container_name: metrics-vm
+    restart: unless-stopped
+    command:
+      - -retentionPeriod=100y
+      - -dedup.minScrapeInterval=1ms      # collapse re-posted samples sharing a timestamp
+                                          # (the rolling-window resend pattern)
+      - -memory.allowedBytes=128MB        # else VM sizes caches to 60% of system RAM
+      - -search.maxStalenessInterval=720h # 30d; sparse daily metrics render as lines, not dots
+                                          # (Go duration flag -- no 'd' unit, hours only)
+    volumes:
+      - vmdata:/victoria-metrics-data
+    ports:
+      - "127.0.0.1:8428:8428"
+    mem_limit: 192m
+
+  shim:
+    image: ${DOCKER_IMAGE:-ghcr.io/ltranco/metrics:latest}
+    container_name: metrics-shim
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - VM_URL=http://victoriametrics:8428/write
+      - LOCAL_TZ=America/Los_Angeles
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on:
+      - victoriametrics
+    mem_limit: 32m
+
+volumes:
+  vmdata:
