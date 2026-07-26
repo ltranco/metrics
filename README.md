@@ -37,6 +37,10 @@ Becomes `health_step{src="ios"}` and `health_weight{src="ios"}`
 Timestamp keys accept `YYYY-MM-DD`, RFC3339, or epoch seconds/millis. Bare
 dates are interpreted in `LOCAL_TZ`.
 
+Values may be JSON numbers or quoted strings (`"6151"`) — iOS Shortcuts emits
+the quoted form. `null` and unparseable values are skipped individually rather
+than failing the whole batch.
+
 Adding a new metric means adding a key to the JSON — nothing to configure.
 
 **Post a rolling 7-day window, not just today.** `-dedup.minScrapeInterval=1ms`

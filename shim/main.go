@@ -33,6 +33,24 @@ func envOr(k, d string) string {
 	return d
 }
 
+// flexFloat accepts either a JSON number (146.9) or a quoted one ("146.9").
+// iOS Shortcuts emits the quoted form. Unparseable or null values leave ok
+// false so the caller skips just that sample instead of failing the batch.
+type flexFloat struct {
+	val float64
+	ok  bool
+}
+
+func (f *flexFloat) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(string(b), `"`)
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil
+	}
+	f.val, f.ok = v, true
+	return nil
+}
+
 // toNanos accepts epoch seconds, epoch millis, "2026-07-25", or RFC3339.
 // Bare dates are interpreted in LOCAL_TZ so daily samples land on the right
 // day in a local-time dashboard rather than the previous one.
@@ -59,7 +77,7 @@ func ingest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload map[string]map[string]*float64
+	var payload map[string]map[string]flexFloat
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&payload); err != nil {
 		http.Error(w, "bad json", http.StatusBadRequest)
 		return
@@ -70,14 +88,14 @@ func ingest(w http.ResponseWriter, r *http.Request) {
 	for metric, samples := range payload {
 		field := nonWord.ReplaceAllString(metric, "_")
 		for when, val := range samples {
-			if val == nil {
+			if !val.ok {
 				continue
 			}
 			ts, err := toNanos(when)
 			if err != nil {
 				continue // skip junk rather than reject the whole batch
 			}
-			fmt.Fprintf(&buf, "health,src=ios %s=%g %d\n", field, *val, ts)
+			fmt.Fprintf(&buf, "health,src=ios %s=%g %d\n", field, val.val, ts)
 			n++
 		}
 	}
