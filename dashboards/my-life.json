@@ -2,7 +2,7 @@
   "id": null,
   "uid": "my-life",
   "title": "My Life",
-  "description": "Personal metrics from HealthKit via iOS Shortcuts, stored in VictoriaMetrics on the Linode.",
+  "description": "Personal metrics from HealthKit via iOS Shortcuts, stored in VictoriaMetrics on the Linode. Top row is pinned to the current Mon-Su week; everything below follows the time picker.",
   "tags": ["life", "health"],
   "timezone": "browser",
   "weekStart": "monday",
@@ -10,9 +10,9 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "time": {
-    "from": "now/w",
+    "from": "now-30d",
     "to": "now"
   },
   "annotations": {
@@ -32,12 +32,21 @@
   "links": [],
   "panels": [
     {
+      "id": 100,
+      "type": "row",
+      "title": "This week (Mon-Su) — pinned, ignores the time picker",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "panels": []
+    },
+    {
       "id": 1,
       "type": "barchart",
-      "title": "Daily steps",
-      "description": "last_over_time reads raw samples only, so a day you didn't sync shows a gap instead of silently inheriting the previous day's count (which is what the 720h staleness window would otherwise do).",
+      "title": "Steps this week",
+      "description": "Pinned to now/w -> now (Monday 00:00 through now) via the panel's Relative time override, so the picker below doesn't move it. Days later in the week simply aren't drawn yet — Grafana has no per-panel 'time to' override, only 'time from'.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 0 },
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 1 },
+      "timeFrom": "now/w",
       "targets": [
         {
           "refId": "A",
@@ -77,7 +86,7 @@
         "barRadius": 0.15,
         "barWidth": 0.6,
         "groupWidth": 0.7,
-        "showValue": "auto",
+        "showValue": "always",
         "stacking": "none",
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 100,
@@ -90,9 +99,10 @@
       "id": 2,
       "type": "stat",
       "title": "Steps left this week (goal 70K)",
-      "description": "70000 minus the sum of this week's samples. Depends on the dashboard range being 'now/w to now' — Monday 00:00 through now — since $__range is that window. clamp_min holds it at 0 once the goal is met. Deliberately uncoloured: 60K remaining on a Monday is on track, so threshold colours would read as false alarm.",
+      "description": "70000 minus the sum of this week's samples. $__range resolves to this panel's own overridden range (now/w -> now), so it is Monday-to-now regardless of the picker. clamp_min holds it at 0 once the goal is met. Deliberately uncoloured: 60K remaining on a Monday is on track, so threshold colours would read as a false alarm all week.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 0 },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 1 },
+      "timeFrom": "now/w",
       "targets": [
         {
           "refId": "A",
@@ -137,12 +147,75 @@
       }
     },
     {
+      "id": 200,
+      "type": "row",
+      "title": "History — follows the time picker",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 },
+      "panels": []
+    },
+    {
       "id": 3,
+      "type": "barchart",
+      "title": "Daily steps",
+      "description": "last_over_time reads raw samples only, so a day you didn't sync shows a gap instead of silently inheriting the previous day's count (which is what the 720h staleness window would otherwise do).",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 11 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+          "editorMode": "code",
+          "expr": "last_over_time(health_step[1d])",
+          "interval": "1d",
+          "legendFormat": "steps",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 85,
+            "gradientMode": "none",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "axisBorderShow": false,
+            "scaleDistribution": { "type": "linear" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "barRadius": 0.15,
+        "barWidth": 0.7,
+        "groupWidth": 0.7,
+        "showValue": "auto",
+        "stacking": "none",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 100,
+        "fullHighlight": false,
+        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom", "calcs": [] },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    },
+    {
+      "id": 4,
       "type": "timeseries",
       "title": "Weight",
       "description": "spanNulls joins across missed days — weight is a slow-moving trend, so a gap is noise rather than signal. Set the unit to Mass/pounds in panel options if you want 'lb' rendered.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 11 },
       "targets": [
         {
           "refId": "A",
@@ -177,55 +250,6 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [{ "color": "purple", "value": null }]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom", "calcs": [] },
-        "tooltip": { "mode": "single", "sort": "none" }
-      }
-    },
-    {
-      "id": 4,
-      "type": "timeseries",
-      "title": "Resting heart rate",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-          "editorMode": "code",
-          "expr": "last_over_time(health_resting_hr[1d])",
-          "interval": "1d",
-          "legendFormat": "resting hr",
-          "range": true,
-          "instant": false
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "blue" },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "showPoints": "always",
-            "pointSize": 8,
-            "spanNulls": true,
-            "axisPlacement": "auto",
-            "axisBorderShow": false,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
           }
         },
         "overrides": []
