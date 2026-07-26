@@ -9,7 +9,7 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -18,7 +18,7 @@
     {
       "id": 100,
       "type": "row",
-      "title": "This week (Mon-Su) — pinned, ignores the time picker",
+      "title": "This week",
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "panels": []
@@ -26,8 +26,8 @@
     {
       "id": 1,
       "type": "barchart",
-      "title": "Steps this week",
-      "description": "Pinned to now/w -> now (Monday 00:00 through now) via the panel's Relative time override, so the picker below doesn't move it. Days later in the week simply aren't drawn yet — Grafana has no per-panel 'time to' override, only 'time from'.",
+      "title": "Steps",
+      "description": "Pinned to now/w -> now (Monday 00:00 through now) via the panel's Relative time override, so the picker below doesn't move it. Days later in the week aren't drawn yet — Grafana has no per-panel 'time to' override, only 'time from'. The x axis is the time field rendered as time:ddd, i.e. the weekday name.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
       "gridPos": { "h": 9, "w": 16, "x": 0, "y": 1 },
       "timeFrom": "now/w",
@@ -63,7 +63,12 @@
             "steps": [{ "color": "blue", "value": null }]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": { "id": "byType", "options": "time" },
+            "properties": [{ "id": "unit", "value": "time:ddd" }]
+          }
+        ]
       },
       "options": {
         "orientation": "vertical",
@@ -73,7 +78,7 @@
         "showValue": "always",
         "stacking": "none",
         "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 100,
+        "xTickLabelSpacing": 0,
         "fullHighlight": false,
         "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom", "calcs": [] },
         "tooltip": { "mode": "single", "sort": "none" }
@@ -82,7 +87,7 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "Steps left this week (goal 70K)",
+      "title": "Steps to goal",
       "description": "70000 minus the sum of this week's samples. $__range resolves to this panel's own overridden range (now/w -> now), so it is Monday-to-now regardless of the picker. clamp_min holds it at 0 once the goal is met. Deliberately uncoloured: 60K remaining on a Monday is on track, so threshold colours would read as a false alarm all week.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
       "gridPos": { "h": 9, "w": 8, "x": 16, "y": 1 },
@@ -133,16 +138,16 @@
     {
       "id": 200,
       "type": "row",
-      "title": "History — follows the time picker",
+      "title": "History",
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 },
       "panels": []
     },
     {
       "id": 3,
-      "type": "barchart",
+      "type": "timeseries",
       "title": "Daily steps",
-      "description": "last_over_time reads raw samples only, so a day you didn't sync shows a gap instead of silently inheriting the previous day's count (which is what the 720h staleness window would otherwise do).",
+      "description": "last_over_time reads raw samples only, so a day you didn't sync shows a gap instead of silently inheriting the previous day's count (which is what the 720h staleness window would otherwise do). spanNulls is off here on purpose — unlike weight, a missing step count is real information.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
       "gridPos": { "h": 9, "w": 12, "x": 0, "y": 11 },
       "targets": [
@@ -163,9 +168,14 @@
           "decimals": 0,
           "color": { "mode": "fixed", "fixedColor": "blue" },
           "custom": {
-            "lineWidth": 0,
-            "fillOpacity": 85,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 0,
             "gradientMode": "none",
+            "showPoints": "auto",
+            "pointSize": 8,
+            "spanNulls": false,
             "axisPlacement": "auto",
             "axisSoftMin": 0,
             "axisBorderShow": false,
@@ -180,15 +190,6 @@
         "overrides": []
       },
       "options": {
-        "orientation": "vertical",
-        "barRadius": 0.15,
-        "barWidth": 0.7,
-        "groupWidth": 0.7,
-        "showValue": "auto",
-        "stacking": "none",
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 100,
-        "fullHighlight": false,
         "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom", "calcs": [] },
         "tooltip": { "mode": "single", "sort": "none" }
       }
@@ -196,8 +197,8 @@
     {
       "id": 4,
       "type": "timeseries",
-      "title": "Weight",
-      "description": "spanNulls joins across missed days — weight is a slow-moving trend, so a gap is noise rather than signal. Set the unit to Mass/pounds in panel options if you want 'lb' rendered.",
+      "title": "Weight (lbs)",
+      "description": "spanNulls joins across missed days — weight is a slow-moving trend, so a gap is noise rather than signal.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 11 },
       "targets": [
