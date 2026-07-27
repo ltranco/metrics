@@ -12,7 +12,7 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 9,
+  "version": 10,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -226,8 +226,8 @@
     {
       "id": 3,
       "type": "timeseries",
-      "title": "Daily steps",
-      "description": "last_over_time reads raw samples only, so a day you didn't sync shows a gap instead of silently inheriting the previous day's count (which is what the 720h staleness window would otherwise do). spanNulls is off here on purpose \u2014 unlike weight, a missing step count is real information.",
+      "title": "Weekly steps (rolling 7d)",
+      "description": "Trailing 7-day sum evaluated daily, not Mon-Su buckets. MetricsQL has no calendar-week bucketing, and a [7d] step would align to Unix epoch multiples -- i.e. Thursdays -- so discrete weekly points would silently be wrong. A rolling window is comparable to the 70K goal at every point instead of only on Sundays. The first ~7 days of any range ramp up from a partial window.",
       "datasource": {
         "type": "prometheus",
         "uid": "dft9acuz7p05cd"
@@ -246,7 +246,7 @@
             "uid": "dft9acuz7p05cd"
           },
           "editorMode": "code",
-          "expr": "last_over_time(health_step[1d])",
+          "expr": "sum_over_time(health_step[7d])",
           "interval": "1d",
           "legendFormat": "steps",
           "range": true,
@@ -259,7 +259,7 @@
             "uid": "dft9acuz7p05cd"
           },
           "editorMode": "code",
-          "expr": "range_linear_regression(last_over_time(health_step[1d]))",
+          "expr": "range_linear_regression(sum_over_time(health_step[7d]))",
           "interval": "1d",
           "legendFormat": "trend",
           "range": true,
@@ -269,7 +269,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "decimals": 0,
+          "decimals": 1,
           "color": {
             "mode": "fixed",
             "fixedColor": "blue"
@@ -284,21 +284,24 @@
             "pointSize": 8,
             "spanNulls": false,
             "axisPlacement": "auto",
-            "axisSoftMin": 0,
             "axisBorderShow": false,
             "scaleDistribution": {
               "type": "linear"
             },
             "thresholdsStyle": {
-              "mode": "off"
+              "mode": "line"
             }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "transparent",
                 "value": null
+              },
+              {
+                "color": "text",
+                "value": 70000
               }
             ]
           }
