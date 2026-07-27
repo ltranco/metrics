@@ -1,3 +1,4 @@
 .env
+.grafana-token
 .DS_Store
 shim/shim
