@@ -8,7 +8,7 @@
 #   -> Add service account (role: Editor) -> Add service account token
 set -euo pipefail
 
-DASH="${1:-dashboards/my-life.json}"
+DASH="${1:-dashboards/proto.json}"
 GRAFANA_URL="${GRAFANA_URL:-https://ltranco.grafana.net}"
 
 if [ -z "${GRAFANA_TOKEN:-}" ]; then

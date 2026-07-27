@@ -1,6 +1,6 @@
 {
-  "uid": "my-life",
-  "title": "My Life",
+  "uid": "proto",
+  "title": "proto",
   "description": "Personal metrics from HealthKit via iOS Shortcuts, stored in VictoriaMetrics on the Linode. Top row is pinned to the current Mon-Su week; everything below follows the time picker.",
   "tags": ["life", "health"],
   "timezone": "browser",
