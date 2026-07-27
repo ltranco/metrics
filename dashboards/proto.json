@@ -12,7 +12,7 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 6,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -495,16 +495,16 @@
       }
     },
     {
-      "id": 5,
-      "type": "status-history",
-      "title": "Step days",
-      "description": "One cell per day, coloured by threshold. Values are printed in the cells so the numbers are readable without hovering, which matters on mobile where Grafana's tooltip needs a hover the browser never sends during a touch drag.",
+      "id": 6,
+      "type": "tim012432-calendarheatmap-panel",
+      "title": "Step calendar",
+      "description": "GitHub-style contribution grid. Keeps interval=1d so each point is one day's total: the plugin buckets by local calendar day, and querying at native resolution would let the 720h staleness window carry a value forward onto days with no sync.",
       "datasource": {
         "type": "prometheus",
         "uid": "dft9acuz7p05cd"
       },
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 24,
         "x": 0,
         "y": 20
@@ -527,53 +527,18 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "decimals": 0,
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "fillOpacity": 100,
-            "lineWidth": 1
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 5000
-              },
-              {
-                "color": "green",
-                "value": 10000
-              },
-              {
-                "color": "dark-green",
-                "value": 15000
-              }
-            ]
-          }
+          "decimals": 0
         },
         "overrides": []
       },
       "options": {
-        "showValue": "auto",
-        "colWidth": 0.9,
-        "rowHeight": 0.9,
-        "perPage": 20,
-        "legend": {
-          "showLegend": false,
-          "displayMode": "list",
-          "placement": "bottom",
-          "calcs": []
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "colorScheme": "green",
+        "aggregation": "last",
+        "weekStartDay": "monday",
+        "showWeekdayLabels": true,
+        "showMonthLabels": true,
+        "showLegend": true,
+        "showTooltip": true
       }
     }
   ]
