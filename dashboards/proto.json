@@ -12,7 +12,7 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 6,
+  "version": 7,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -534,11 +534,14 @@
       "options": {
         "colorScheme": "green",
         "aggregation": "last",
-        "weekStartDay": "monday",
-        "showWeekdayLabels": true,
+        "weekStart": "monday",
+        "showWeekLabels": true,
         "showMonthLabels": true,
         "showLegend": true,
-        "showTooltip": true
+        "showTooltip": true,
+        "autoRectSize": true,
+        "space": 3,
+        "radius": 2
       }
     }
   ]
