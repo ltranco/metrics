@@ -12,7 +12,7 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 4,
+  "version": 5,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -348,7 +348,10 @@
           "showLegend": true,
           "displayMode": "list",
           "placement": "bottom",
-          "calcs": []
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ]
         },
         "tooltip": {
           "mode": "single",
@@ -478,6 +481,91 @@
       "options": {
         "legend": {
           "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "status-history",
+      "title": "Step days",
+      "description": "One cell per day, coloured by threshold. Values are printed in the cells so the numbers are readable without hovering, which matters on mobile where Grafana's tooltip needs a hover the browser never sends during a touch drag.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(health_step[1d])",
+          "interval": "1d",
+          "legendFormat": "steps",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 100,
+            "lineWidth": 1
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 5000
+              },
+              {
+                "color": "green",
+                "value": 10000
+              },
+              {
+                "color": "dark-green",
+                "value": 15000
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "auto",
+        "colWidth": 0.9,
+        "rowHeight": 0.9,
+        "perPage": 20,
+        "legend": {
+          "showLegend": false,
           "displayMode": "list",
           "placement": "bottom",
           "calcs": []
