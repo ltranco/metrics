@@ -12,7 +12,7 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 10,
+  "version": 12,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -225,9 +225,9 @@
     },
     {
       "id": 3,
-      "type": "timeseries",
-      "title": "Weekly steps (rolling 7d)",
-      "description": "Trailing 7-day sum evaluated daily, not Mon-Su buckets. MetricsQL has no calendar-week bucketing, and a [7d] step would align to Unix epoch multiples -- i.e. Thursdays -- so discrete weekly points would silently be wrong. A rolling window is comparable to the 70K goal at every point instead of only on Sundays. The first ~7 days of any range ramp up from a partial window.",
+      "type": "volkovlabs-echarts-panel",
+      "title": "Weekly steps",
+      "description": "One point per Monday-start calendar week, summing that week's days. Done in JS because MetricsQL has no calendar-week bucketing and a [7d] step aligns to Unix epoch multiples (epoch day 0 was a Thursday). The in-progress week is plotted but excluded from the regression fit, so a half-finished week doesn't drag the trend down.",
       "datasource": {
         "type": "prometheus",
         "uid": "dft9acuz7p05cd"
@@ -246,22 +246,9 @@
             "uid": "dft9acuz7p05cd"
           },
           "editorMode": "code",
-          "expr": "sum_over_time(health_step[7d])",
+          "expr": "last_over_time(health_step[1d])",
           "interval": "1d",
           "legendFormat": "steps",
-          "range": true,
-          "instant": false
-        },
-        {
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "dft9acuz7p05cd"
-          },
-          "editorMode": "code",
-          "expr": "range_linear_regression(sum_over_time(health_step[7d]))",
-          "interval": "1d",
-          "legendFormat": "trend",
           "range": true,
           "instant": false
         }
@@ -269,96 +256,17 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "decimals": 1,
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "blue"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "showPoints": "auto",
-            "pointSize": 8,
-            "spanNulls": false,
-            "axisPlacement": "auto",
-            "axisBorderShow": false,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "thresholdsStyle": {
-              "mode": "line"
-            }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "transparent",
-                "value": null
-              },
-              {
-                "color": "text",
-                "value": 70000
-              }
-            ]
-          }
+          "decimals": 0
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "semi-dark-red"
-                }
-              },
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "fill": "dash",
-                  "dash": [
-                    10,
-                    10
-                  ]
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.showPoints",
-                "value": "never"
-              },
-              {
-                "id": "custom.spanNulls",
-                "value": true
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
-        "legend": {
-          "showLegend": true,
-          "displayMode": "list",
-          "placement": "bottom",
-          "calcs": [
-            "lastNotNull",
-            "mean"
-          ]
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
+        "getOption": "// Business Charts v7: single `context` arg.\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst frame = data.series && data.series[0];\nif (!frame) { return {}; }\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst tf = frame.fields.find((f) => f.type === 'time');\nconst vf = frame.fields.find((f) => f.type === 'number');\nconst ts = arr(tf), vs = arr(vf);\n\nconst key = (d) => d.getFullYear() + '-' +\n  String(d.getMonth() + 1).padStart(2, '0') + '-' +\n  String(d.getDate()).padStart(2, '0');\n\n// one value per LOCAL calendar day (points land on UTC-aligned steps)\nconst byDay = new Map();\nfor (let i = 0; i < ts.length; i++) {\n  const v = vs[i];\n  if (v === null || v === undefined || Number.isNaN(v)) { continue; }\n  byDay.set(key(new Date(ts[i])), v);\n}\n\n// sum days into Monday-start calendar weeks\nconst byWeek = new Map();\nconst daysIn = new Map();\nbyDay.forEach((v, k) => {\n  const p = k.split('-').map(Number);\n  const d = new Date(p[0], p[1] - 1, p[2]);\n  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // Mon=0 .. Sun=6 -> back to Monday\n  const w = key(d);\n  byWeek.set(w, (byWeek.get(w) || 0) + v);\n  daysIn.set(w, (daysIn.get(w) || 0) + 1);\n});\n\n// which bucket is the in-progress week?\nconst today = new Date();\ntoday.setDate(today.getDate() - ((today.getDay() + 6) % 7));\nconst currentWeek = key(today);\n\n// A week clipped by the range edge is not a low week -- it's a partial one.\n// Drop those, but keep the current week, which is legitimately in progress.\nconst weeks = Array.from(byWeek.keys()).sort()\n  .filter((w) => daysIn.get(w) === 7 || w === currentWeek);\nif (!weeks.length) { return {}; }\nconst totals = weeks.map((w) => Math.round(byWeek.get(w)));\nconst complete = weeks.map((w, i) => [i, totals[i]]).filter((p) => weeks[p[0]] !== currentWeek);\n\nconst fit = (pts) => {\n  const n = pts.length;\n  if (n < 2) { return null; }\n  let sx = 0, sy = 0, sxx = 0, sxy = 0;\n  for (let i = 0; i < n; i++) { const x = pts[i][0], y = pts[i][1]; sx += x; sy += y; sxx += x * x; sxy += x * y; }\n  const den = n * sxx - sx * sx;\n  if (!den) { return null; }\n  const b = (n * sxy - sx * sy) / den;\n  const a = (sy - b * sx) / n;\n  return (x) => a + b * x;\n};\nconst f = fit(complete);\nconst trend = f ? weeks.map((w, i) => Math.round(f(i))) : [];\n\nconst MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];\nconst labels = weeks.map((w) => { const p = w.split('-').map(Number); return MON[p[1] - 1] + ' ' + p[2]; });\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink2 = c ? c.text.secondary : '#888';\nconst grid = c ? c.border.weak : '#2a2d33';\n\nreturn {\n  grid: { left: 60, right: 20, top: 20, bottom: 55 },\n  tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() },\n  legend: { bottom: 0, textStyle: { color: ink2 }, data: ['weekly steps', 'trend'] },\n  xAxis: {\n    type: 'category', data: labels, boundaryGap: false,\n    axisLabel: { color: ink2 }, axisLine: { lineStyle: { color: grid } }\n  },\n  yAxis: {\n    type: 'value', scale: true,\n    axisLabel: { color: ink2, formatter: (v) => (v / 1000) + 'K' },\n    splitLine: { lineStyle: { color: grid } }\n  },\n  series: [\n    {\n      name: 'weekly steps', type: 'line', data: totals,\n      symbolSize: 7, lineStyle: { width: 2, color: '#3D71D9' }, itemStyle: { color: '#3D71D9' },\n      markLine: {\n        silent: true, symbol: 'none',\n        data: [{ yAxis: 70000, label: { formatter: '70K goal', color: ink2, position: 'insideEndTop' },\n                 lineStyle: { color: ink2, type: 'solid', width: 1 } }]\n      }\n    },\n    {\n      name: 'trend', type: 'line', data: trend, symbol: 'none',\n      lineStyle: { width: 2, type: 'dashed', color: '#C4162A' }, itemStyle: { color: '#C4162A' }\n    }\n  ]\n};",
+        "renderer": "canvas",
+        "theme": "default",
+        "editor": {
+          "format": "auto",
+          "height": 600
         }
       }
     },
