@@ -2,14 +2,17 @@
   "uid": "proto",
   "title": "proto",
   "description": "Personal metrics from HealthKit via iOS Shortcuts, stored in VictoriaMetrics on the Linode. Top row is pinned to the current Mon-Su week; everything below follows the time picker.",
-  "tags": ["life", "health"],
+  "tags": [
+    "life",
+    "health"
+  ],
   "timezone": "browser",
   "weekStart": "monday",
   "editable": true,
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -20,21 +23,37 @@
       "type": "row",
       "title": "This week",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "panels": []
     },
     {
       "id": 1,
       "type": "barchart",
       "title": "Steps",
-      "description": "Pinned to now/w -> now (Monday 00:00 through now) via the panel's Relative time override, so the picker below doesn't move it. Days later in the week aren't drawn yet — Grafana has no per-panel 'time to' override, only 'time from'. The x axis is the time field rendered as time:ddd, i.e. the weekday name.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 1 },
+      "description": "Pinned to now/w -> now (Monday 00:00 through now) via the panel's Relative time override, so the picker below doesn't move it. Days later in the week aren't drawn yet \u2014 Grafana has no per-panel 'time to' override, only 'time from'. The x axis is the time field rendered as time:ddd, i.e. the weekday name.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 0,
+        "y": 1
+      },
       "timeFrom": "now/w",
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
           "editorMode": "code",
           "expr": "last_over_time(health_step[1d])",
           "interval": "1d",
@@ -47,7 +66,10 @@
         "defaults": {
           "unit": "short",
           "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
           "custom": {
             "lineWidth": 0,
             "fillOpacity": 85,
@@ -55,18 +77,35 @@
             "axisPlacement": "auto",
             "axisSoftMin": 0,
             "axisBorderShow": false,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byType", "options": "time" },
-            "properties": [{ "id": "unit", "value": "time:ddd" }]
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:ddd"
+              }
+            ]
           }
         ]
       },
@@ -80,8 +119,16 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0,
         "fullHighlight": false,
-        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom", "calcs": [] },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       }
     },
     {
@@ -89,13 +136,24 @@
       "type": "stat",
       "title": "Steps to goal",
       "description": "70000 minus the sum of this week's samples. $__range resolves to this panel's own overridden range (now/w -> now), so it is Monday-to-now regardless of the picker. clamp_min holds it at 0 once the goal is met. Deliberately uncoloured: 60K remaining on a Monday is on track, so threshold colours would read as a false alarm all week.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 1
+      },
       "timeFrom": "now/w",
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
           "editorMode": "code",
           "expr": "clamp_min(70000 - sum_over_time(health_step[$__range]), 0)",
           "legendFormat": "",
@@ -107,24 +165,41 @@
         "defaults": {
           "unit": "short",
           "decimals": 1,
-          "color": { "mode": "fixed", "fixedColor": "text" },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
           "mappings": [
             {
               "type": "value",
               "options": {
-                "0": { "text": "Goal met", "index": 0 }
+                "0": {
+                  "text": "Goal met",
+                  "index": 0
+                }
               }
             }
           ],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "text", "value": null }]
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
           }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "orientation": "auto",
         "textMode": "value",
         "wideLayout": true,
@@ -140,24 +215,53 @@
       "type": "row",
       "title": "History",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
       "panels": []
     },
     {
       "id": 3,
       "type": "timeseries",
       "title": "Daily steps",
-      "description": "last_over_time reads raw samples only, so a day you didn't sync shows a gap instead of silently inheriting the previous day's count (which is what the 720h staleness window would otherwise do). spanNulls is off here on purpose — unlike weight, a missing step count is real information.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 11 },
+      "description": "last_over_time reads raw samples only, so a day you didn't sync shows a gap instead of silently inheriting the previous day's count (which is what the 720h staleness window would otherwise do). spanNulls is off here on purpose \u2014 unlike weight, a missing step count is real information.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
           "editorMode": "code",
           "expr": "last_over_time(health_step[1d])",
           "interval": "1d",
           "legendFormat": "steps",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
+          "editorMode": "code",
+          "expr": "range_linear_regression(last_over_time(health_step[1d]))",
+          "interval": "1d",
+          "legendFormat": "trend",
           "range": true,
           "instant": false
         }
@@ -166,7 +270,10 @@
         "defaults": {
           "unit": "short",
           "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -179,36 +286,115 @@
             "axisPlacement": "auto",
             "axisSoftMin": 0,
             "axisBorderShow": false,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "semi-dark-red"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              },
+              {
+                "id": "custom.spanNulls",
+                "value": true
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom", "calcs": [] },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       }
     },
     {
       "id": 4,
       "type": "timeseries",
       "title": "Weight (lbs)",
-      "description": "The `> 0` drops days where HealthKit had no sample and the Shortcut sent 0 — a zero would otherwise crater the axis. Nulls never reach storage; the shim skips them. spanNulls joins across the resulting gaps, since weight is a slow-moving trend where a gap is noise rather than signal.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 11 },
+      "description": "The `> 0` drops days where HealthKit had no sample and the Shortcut sent 0 \u2014 a zero would otherwise crater the axis. Nulls never reach storage; the shim skips them. spanNulls joins across the resulting gaps, since weight is a slow-moving trend where a gap is noise rather than signal.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
           "editorMode": "code",
           "expr": "last_over_time(health_weight[1d]) > 0",
           "interval": "1d",
           "legendFormat": "weight",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
+          "editorMode": "code",
+          "expr": "range_linear_regression(last_over_time(health_weight[1d]) > 0)",
+          "interval": "1d",
+          "legendFormat": "trend",
           "range": true,
           "instant": false
         }
@@ -217,7 +403,10 @@
         "defaults": {
           "unit": "short",
           "decimals": 1,
-          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -229,19 +418,74 @@
             "spanNulls": true,
             "axisPlacement": "auto",
             "axisBorderShow": false,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "purple", "value": null }]
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "semi-dark-red"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              },
+              {
+                "id": "custom.spanNulls",
+                "value": true
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom", "calcs": [] },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       }
     }
   ]
