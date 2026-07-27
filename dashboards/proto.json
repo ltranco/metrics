@@ -106,7 +106,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "decimals": 0,
+          "decimals": 1,
           "color": { "mode": "fixed", "fixedColor": "text" },
           "mappings": [
             {
@@ -198,7 +198,7 @@
       "id": 4,
       "type": "timeseries",
       "title": "Weight (lbs)",
-      "description": "spanNulls joins across missed days — weight is a slow-moving trend, so a gap is noise rather than signal.",
+      "description": "The `> 0` drops days where HealthKit had no sample and the Shortcut sent 0 — a zero would otherwise crater the axis. Nulls never reach storage; the shim skips them. spanNulls joins across the resulting gaps, since weight is a slow-moving trend where a gap is noise rather than signal.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 11 },
       "targets": [
@@ -206,7 +206,7 @@
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
           "editorMode": "code",
-          "expr": "last_over_time(health_weight[1d])",
+          "expr": "last_over_time(health_weight[1d]) > 0",
           "interval": "1d",
           "legendFormat": "weight",
           "range": true,
@@ -225,7 +225,7 @@
             "fillOpacity": 0,
             "gradientMode": "none",
             "showPoints": "always",
-            "pointSize": 8,
+            "pointSize": 5,
             "spanNulls": true,
             "axisPlacement": "auto",
             "axisBorderShow": false,
