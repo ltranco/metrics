@@ -12,7 +12,7 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 15,
+  "version": 16,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -135,7 +135,7 @@
       "id": 2,
       "type": "stat",
       "title": "Steps to goal",
-      "description": "70000 minus the sum of this week's samples. $__range resolves to this panel's own overridden range (now/w -> now), so it is Monday-to-now regardless of the picker. clamp_min holds it at 0 once the goal is met. Deliberately uncoloured: 60K remaining on a Monday is on track, so threshold colours would read as a false alarm all week.",
+      "description": "Coloured low-is-good: green under 20K left, amber to 45K, red beyond. Note these are absolute thresholds, not pace-aware -- early in the week you will read red while still perfectly on track, because 70K genuinely is a long way to go on a Monday.",
       "datasource": {
         "type": "prometheus",
         "uid": "dft9acuz7p05cd"
@@ -166,8 +166,7 @@
           "unit": "short",
           "decimals": 1,
           "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "mappings": [
             {
@@ -175,6 +174,7 @@
               "options": {
                 "0": {
                   "text": "Goal met",
+                  "color": "#15784F",
                   "index": 0
                 }
               }
@@ -184,8 +184,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
+                "color": "#6FD3A0",
                 "value": null
+              },
+              {
+                "color": "#F5A524",
+                "value": 20000
+              },
+              {
+                "color": "#E5484D",
+                "value": 45000
               }
             ]
           }
@@ -203,7 +211,7 @@
         "orientation": "auto",
         "textMode": "value",
         "wideLayout": true,
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "showPercentChange": false,
