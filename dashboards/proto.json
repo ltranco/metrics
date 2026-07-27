@@ -12,7 +12,7 @@
   "graphTooltip": 1,
   "refresh": "5m",
   "schemaVersion": 39,
-  "version": 14,
+  "version": 15,
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -68,7 +68,7 @@
           "decimals": 0,
           "color": {
             "mode": "fixed",
-            "fixedColor": "blue"
+            "fixedColor": "#3E63DD"
           },
           "custom": {
             "lineWidth": 0,
@@ -88,7 +88,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "#3E63DD",
                 "value": null
               }
             ]
@@ -261,7 +261,7 @@
         "overrides": []
       },
       "options": {
-        "getOption": "// Business Charts v7: single `context` arg.\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst frame = data.series && data.series[0];\nif (!frame) { return {}; }\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst tf = frame.fields.find((f) => f.type === 'time');\nconst vf = frame.fields.find((f) => f.type === 'number');\nconst ts = arr(tf), vs = arr(vf);\n\nconst key = (d) => d.getFullYear() + '-' +\n  String(d.getMonth() + 1).padStart(2, '0') + '-' +\n  String(d.getDate()).padStart(2, '0');\n\n// one value per LOCAL calendar day (points land on UTC-aligned steps)\nconst byDay = new Map();\nfor (let i = 0; i < ts.length; i++) {\n  const v = vs[i];\n  if (v === null || v === undefined || Number.isNaN(v)) { continue; }\n  byDay.set(key(new Date(ts[i])), v);\n}\n\n// sum days into Monday-start calendar weeks\nconst byWeek = new Map();\nconst daysIn = new Map();\nbyDay.forEach((v, k) => {\n  const p = k.split('-').map(Number);\n  const d = new Date(p[0], p[1] - 1, p[2]);\n  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // Mon=0 .. Sun=6 -> back to Monday\n  const w = key(d);\n  byWeek.set(w, (byWeek.get(w) || 0) + v);\n  daysIn.set(w, (daysIn.get(w) || 0) + 1);\n});\n\n// which bucket is the in-progress week?\nconst today = new Date();\ntoday.setDate(today.getDate() - ((today.getDay() + 6) % 7));\nconst currentWeek = key(today);\n\n// A week clipped by the range edge is not a low week -- it's a partial one.\n// Drop those, but keep the current week, which is legitimately in progress.\nconst weeks = Array.from(byWeek.keys()).sort()\n  .filter((w) => daysIn.get(w) === 7 || w === currentWeek);\nif (!weeks.length) { return {}; }\nconst totals = weeks.map((w) => Math.round(byWeek.get(w)));\nconst complete = weeks.map((w, i) => [i, totals[i]]).filter((p) => weeks[p[0]] !== currentWeek);\n\nconst fit = (pts) => {\n  const n = pts.length;\n  if (n < 2) { return null; }\n  let sx = 0, sy = 0, sxx = 0, sxy = 0;\n  for (let i = 0; i < n; i++) { const x = pts[i][0], y = pts[i][1]; sx += x; sy += y; sxx += x * x; sxy += x * y; }\n  const den = n * sxx - sx * sx;\n  if (!den) { return null; }\n  const b = (n * sxy - sx * sy) / den;\n  const a = (sy - b * sx) / n;\n  return (x) => a + b * x;\n};\nconst f = fit(complete);\nconst trend = f ? weeks.map((w, i) => Math.round(f(i))) : [];\n\nconst MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];\nconst labels = weeks.map((w) => { const p = w.split('-').map(Number); return MON[p[1] - 1] + ' ' + p[2]; });\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink2 = c ? c.text.secondary : '#888';\nconst grid = c ? c.border.weak : '#2a2d33';\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  grid: { left: 60, right: 20, top: 20, bottom: 55 },\n  tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() },\n  legend: { bottom: 0, textStyle: { color: ink2 }, data: ['weekly steps', 'trend'] },\n  xAxis: {\n    type: 'category', data: labels, boundaryGap: false,\n    axisLabel: { color: ink2 }, axisLine: { lineStyle: { color: grid } }\n  },\n  yAxis: {\n    type: 'value', scale: true,\n    axisLabel: { color: ink2, formatter: (v) => (v / 1000) + 'K' },\n    splitLine: { lineStyle: { color: grid } }\n  },\n  series: [\n    {\n      name: 'weekly steps', type: 'line', data: totals,\n      symbolSize: 7, smooth: 0.2,\n      lineStyle: { width: 2, color: '#3D71D9' }, itemStyle: { color: '#3D71D9' },\n      areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [\n        { offset: 0, color: 'rgba(51,110,224,0.90)' },\n        { offset: 0.45, color: 'rgba(61,113,217,0.45)' },\n        { offset: 1, color: 'rgba(87,148,242,0.04)' }\n      ] } },\n      markLine: {\n        silent: true, symbol: 'none',\n        data: [{ yAxis: 70000, label: { formatter: '70K goal', color: ink2, position: 'insideEndTop' },\n                 lineStyle: { color: ink2, type: 'solid', width: 1 } }]\n      }\n    },\n    {\n      name: 'trend', type: 'line', data: trend, symbol: 'none',\n      lineStyle: { width: 2, type: 'dashed', color: '#C4162A' }, itemStyle: { color: '#C4162A' }\n    }\n  ]\n};",
+        "getOption": "// Business Charts v7: single `context` arg.\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst frame = data.series && data.series[0];\nif (!frame) { return {}; }\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst tf = frame.fields.find((f) => f.type === 'time');\nconst vf = frame.fields.find((f) => f.type === 'number');\nconst ts = arr(tf), vs = arr(vf);\n\nconst key = (d) => d.getFullYear() + '-' +\n  String(d.getMonth() + 1).padStart(2, '0') + '-' +\n  String(d.getDate()).padStart(2, '0');\n\n// one value per LOCAL calendar day (points land on UTC-aligned steps)\nconst byDay = new Map();\nfor (let i = 0; i < ts.length; i++) {\n  const v = vs[i];\n  if (v === null || v === undefined || Number.isNaN(v)) { continue; }\n  byDay.set(key(new Date(ts[i])), v);\n}\n\n// sum days into Monday-start calendar weeks\nconst byWeek = new Map();\nconst daysIn = new Map();\nbyDay.forEach((v, k) => {\n  const p = k.split('-').map(Number);\n  const d = new Date(p[0], p[1] - 1, p[2]);\n  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // Mon=0 .. Sun=6 -> back to Monday\n  const w = key(d);\n  byWeek.set(w, (byWeek.get(w) || 0) + v);\n  daysIn.set(w, (daysIn.get(w) || 0) + 1);\n});\n\n// which bucket is the in-progress week?\nconst today = new Date();\ntoday.setDate(today.getDate() - ((today.getDay() + 6) % 7));\nconst currentWeek = key(today);\n\n// A week clipped by the range edge is not a low week -- it's a partial one.\n// Drop those, but keep the current week, which is legitimately in progress.\nconst weeks = Array.from(byWeek.keys()).sort()\n  .filter((w) => daysIn.get(w) === 7 || w === currentWeek);\nif (!weeks.length) { return {}; }\nconst totals = weeks.map((w) => Math.round(byWeek.get(w)));\nconst complete = weeks.map((w, i) => [i, totals[i]]).filter((p) => weeks[p[0]] !== currentWeek);\n\nconst fit = (pts) => {\n  const n = pts.length;\n  if (n < 2) { return null; }\n  let sx = 0, sy = 0, sxx = 0, sxy = 0;\n  for (let i = 0; i < n; i++) { const x = pts[i][0], y = pts[i][1]; sx += x; sy += y; sxx += x * x; sxy += x * y; }\n  const den = n * sxx - sx * sx;\n  if (!den) { return null; }\n  const b = (n * sxy - sx * sy) / den;\n  const a = (sy - b * sx) / n;\n  return (x) => a + b * x;\n};\nconst f = fit(complete);\nconst trend = f ? weeks.map((w, i) => Math.round(f(i))) : [];\n\nconst MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];\nconst labels = weeks.map((w) => { const p = w.split('-').map(Number); return MON[p[1] - 1] + ' ' + p[2]; });\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink2 = c ? c.text.secondary : '#888';\nconst grid = c ? c.border.weak : '#2a2d33';\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  grid: { left: 60, right: 20, top: 20, bottom: 55 },\n  tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() },\n  legend: { bottom: 0, textStyle: { color: ink2 }, data: ['weekly steps', 'trend'] },\n  xAxis: {\n    type: 'category', data: labels, boundaryGap: false,\n    axisLabel: { color: ink2 }, axisLine: { lineStyle: { color: grid } }\n  },\n  yAxis: {\n    type: 'value', scale: true,\n    axisLabel: { color: ink2, formatter: (v) => (v / 1000) + 'K' },\n    splitLine: { lineStyle: { color: grid } }\n  },\n  series: [\n    {\n      name: 'weekly steps', type: 'line', data: totals,\n      symbolSize: 7, smooth: 0.2,\n      lineStyle: { width: 2, color: '#3E63DD' }, itemStyle: { color: '#3E63DD' },\n      areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [\n        { offset: 0, color: 'rgba(62,99,221,0.90)' },\n        { offset: 0.45, color: 'rgba(62,99,221,0.45)' },\n        { offset: 1, color: 'rgba(62,99,221,0.04)' }\n      ] } },\n      markLine: {\n        silent: true, symbol: 'none',\n        data: [{ yAxis: 70000, label: { formatter: '70K goal', color: ink2, position: 'insideEndTop' },\n                 lineStyle: { color: ink2, type: 'solid', width: 1 } }]\n      }\n    },\n    {\n      name: 'trend', type: 'line', data: trend, symbol: 'none',\n      lineStyle: { width: 2, type: 'dashed', color: '#E5484D' }, itemStyle: { color: '#E5484D' }\n    }\n  ]\n};",
         "renderer": "canvas",
         "theme": "default",
         "editor": {
@@ -273,9 +273,9 @@
     },
     {
       "id": 4,
-      "type": "timeseries",
+      "type": "volkovlabs-echarts-panel",
       "title": "Weight (lbs)",
-      "description": "The `> 0` drops days where HealthKit had no sample and the Shortcut sent 0 \u2014 a zero would otherwise crater the axis. Nulls never reach storage; the shim skips them. spanNulls joins across the resulting gaps, since weight is a slow-moving trend where a gap is noise rather than signal.",
+      "description": "Rebuilt on ECharts so the area fill is a real multi-stop gradient; Grafana's gradientMode only fades a flat opacity and read as almost nothing. Zeros are dropped (HealthKit sends 0 on non-weigh-in days) and the regression is fitted over every remaining point.",
       "datasource": {
         "type": "prometheus",
         "uid": "dft9acuz7p05cd"
@@ -286,6 +286,7 @@
         "x": 12,
         "y": 11
       },
+      "maxDataPoints": 10000,
       "targets": [
         {
           "refId": "A",
@@ -299,117 +300,24 @@
           "legendFormat": "weight",
           "range": true,
           "instant": false
-        },
-        {
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "dft9acuz7p05cd"
-          },
-          "editorMode": "code",
-          "expr": "range_linear_regression(last_over_time(health_weight[1h]) > 0)",
-          "interval": "1h",
-          "legendFormat": "trend",
-          "range": true,
-          "instant": false
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "decimals": 1,
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "purple"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 30,
-            "gradientMode": "opacity",
-            "showPoints": "always",
-            "pointSize": 5,
-            "spanNulls": true,
-            "axisPlacement": "auto",
-            "axisBorderShow": false,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "purple",
-                "value": null
-              }
-            ]
-          }
+          "decimals": 1
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "semi-dark-red"
-                }
-              },
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "fill": "dash",
-                  "dash": [
-                    10,
-                    10
-                  ]
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.showPoints",
-                "value": "never"
-              },
-              {
-                "id": "custom.spanNulls",
-                "value": true
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
-        "legend": {
-          "showLegend": true,
-          "displayMode": "list",
-          "placement": "bottom",
-          "calcs": [
-            "lastNotNull",
-            "mean"
-          ]
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
+        "getOption": "// Business Charts v7: single `context` arg.\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst frame = data.series && data.series[0];\nif (!frame) { return {}; }\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst tf = frame.fields.find((f) => f.type === 'time');\nconst vf = frame.fields.find((f) => f.type === 'number');\nconst ts = arr(tf), vs = arr(vf);\n\nconst key = (d) => d.getFullYear() + '-' +\n  String(d.getMonth() + 1).padStart(2, '0') + '-' +\n  String(d.getDate()).padStart(2, '0');\n\n// one weigh-in per LOCAL calendar day; zeros are non-weigh-in days\nconst byDay = new Map();\nfor (let i = 0; i < ts.length; i++) {\n  const v = vs[i];\n  if (v === null || v === undefined || Number.isNaN(v) || v <= 0) { continue; }\n  byDay.set(key(new Date(ts[i])), v);\n}\nconst days = Array.from(byDay.keys()).sort();\nif (!days.length) { return {}; }\nconst vals = days.map((d) => Math.round(byDay.get(d) * 10) / 10);\n\n// least squares over every point\nconst n = vals.length;\nlet sx = 0, sy = 0, sxx = 0, sxy = 0;\nfor (let i = 0; i < n; i++) { sx += i; sy += vals[i]; sxx += i * i; sxy += i * vals[i]; }\nconst den = n * sxx - sx * sx;\nconst b = den ? (n * sxy - sx * sy) / den : 0;\nconst a = (sy - b * sx) / n;\nconst trend = vals.map((_, i) => Math.round((a + b * i) * 10) / 10);\n\nconst MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];\nconst labels = days.map((d) => { const p = d.split('-').map(Number); return MON[p[1] - 1] + ' ' + p[2]; });\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink2 = c ? c.text.secondary : '#8B8D98';\nconst grid = c ? c.border.weak : '#2a2d33';\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  grid: { left: 55, right: 20, top: 20, bottom: 55 },\n  tooltip: { trigger: 'axis', valueFormatter: (v) => v + ' lbs' },\n  legend: { bottom: 0, textStyle: { color: ink2 }, data: ['weight', 'trend'] },\n  xAxis: {\n    type: 'category', data: labels, boundaryGap: false,\n    axisLabel: { color: ink2 }, axisLine: { lineStyle: { color: grid } }\n  },\n  yAxis: {\n    type: 'value', scale: true,\n    axisLabel: { color: ink2 },\n    splitLine: { lineStyle: { color: grid } }\n  },\n  series: [\n    {\n      name: 'weight', type: 'line', data: vals, smooth: 0.2,\n      symbolSize: 5, lineStyle: { width: 2, color: '#12A594' }, itemStyle: { color: '#12A594' },\n      areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [\n        { offset: 0, color: 'rgba(18,165,148,0.90)' },\n        { offset: 0.45, color: 'rgba(18,165,148,0.45)' },\n        { offset: 1, color: 'rgba(18,165,148,0.04)' }\n      ] } }\n    },\n    {\n      name: 'trend', type: 'line', data: trend, symbol: 'none',\n      lineStyle: { width: 2, type: 'dashed', color: '#E5484D' }, itemStyle: { color: '#E5484D' }\n    }\n  ]\n};",
+        "renderer": "canvas",
+        "theme": "default",
+        "editor": {
+          "format": "auto",
+          "height": 600
         }
-      },
-      "maxDataPoints": 10000
+      }
     },
     {
       "id": 7,
@@ -449,7 +357,7 @@
         "overrides": []
       },
       "options": {
-        "getOption": "// Business Charts v7 passes a single `context` argument:\n//   { grafana: {theme, ...}, panel: {data, chart}, echarts, ecStat }\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst frame = data.series && data.series[0];\nif (!frame) { return {}; }\n\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst tf = frame.fields.find((f) => f.type === 'time');\nconst vf = frame.fields.find((f) => f.type === 'number');\nconst ts = arr(tf), vs = arr(vf);\n\n// Bucket by LOCAL calendar day; last value wins within a day.\nconst byDay = new Map();\nfor (let i = 0; i < ts.length; i++) {\n  const v = vs[i];\n  if (v === null || v === undefined || Number.isNaN(v)) { continue; }\n  const d = new Date(ts[i]);\n  const key = d.getFullYear() + '-' +\n    String(d.getMonth() + 1).padStart(2, '0') + '-' +\n    String(d.getDate()).padStart(2, '0');\n  byDay.set(key, v);\n}\nconst points = Array.from(byDay, (e) => [e[0], e[1]]);\nif (!points.length) { return {}; }\n\nconst days = points.map((p) => p[0]).sort();\nconst range = [days[0], days[days.length - 1]];\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink   = c ? c.text.primary   : '#ccc';\nconst ink2  = c ? c.text.secondary : '#888';\nconst empty = c ? c.background.secondary : '#22252b';\nconst gap   = c ? c.background.primary   : '#111217';\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  tooltip: {\n    formatter: (p) => p.value[0] + '<br/><b>' + Math.round(p.value[1]).toLocaleString() + '</b> steps'\n  },\n  visualMap: {\n    type: 'piecewise',\n    orient: 'horizontal',\n    left: 'center',\n    bottom: 0,\n    itemWidth: 12,\n    itemHeight: 12,\n    textStyle: { color: ink2 },\n    pieces: [\n      { lt: 5000,               color: '#C4162A', label: '< 5K' },\n      { gte: 5000,  lt: 10000,  color: '#FF9830', label: '5-10K' },\n      { gte: 10000, lt: 15000,  color: '#56A64B', label: '10-15K' },\n      { gte: 15000,             color: '#19730E', label: '15K+' }\n    ]\n  },\n  calendar: {\n    top: 30,\n    left: 45,\n    right: 20,\n    cellSize: ['auto', 15],\n    range: range,\n    itemStyle: { color: empty, borderColor: gap, borderWidth: 2 },\n    splitLine: { show: false },\n    yearLabel: { show: false },\n    dayLabel: { firstDay: 1, color: ink2, nameMap: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] },\n    monthLabel: { color: ink }\n  },\n  series: [{\n    type: 'heatmap',\n    coordinateSystem: 'calendar',\n    data: points,\n    itemStyle: { borderRadius: 2, borderColor: gap, borderWidth: 2 }\n  }]\n};",
+        "getOption": "// Business Charts v7 passes a single `context` argument:\n//   { grafana: {theme, ...}, panel: {data, chart}, echarts, ecStat }\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst frame = data.series && data.series[0];\nif (!frame) { return {}; }\n\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst tf = frame.fields.find((f) => f.type === 'time');\nconst vf = frame.fields.find((f) => f.type === 'number');\nconst ts = arr(tf), vs = arr(vf);\n\n// Bucket by LOCAL calendar day; last value wins within a day.\nconst byDay = new Map();\nfor (let i = 0; i < ts.length; i++) {\n  const v = vs[i];\n  if (v === null || v === undefined || Number.isNaN(v)) { continue; }\n  const d = new Date(ts[i]);\n  const key = d.getFullYear() + '-' +\n    String(d.getMonth() + 1).padStart(2, '0') + '-' +\n    String(d.getDate()).padStart(2, '0');\n  byDay.set(key, v);\n}\nconst points = Array.from(byDay, (e) => [e[0], e[1]]);\nif (!points.length) { return {}; }\n\nconst days = points.map((p) => p[0]).sort();\nconst range = [days[0], days[days.length - 1]];\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink   = c ? c.text.primary   : '#ccc';\nconst ink2  = c ? c.text.secondary : '#888';\nconst empty = c ? c.background.secondary : '#22252b';\nconst gap   = c ? c.background.primary   : '#111217';\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  tooltip: {\n    formatter: (p) => p.value[0] + '<br/><b>' + Math.round(p.value[1]).toLocaleString() + '</b> steps'\n  },\n  visualMap: {\n    type: 'piecewise',\n    orient: 'horizontal',\n    left: 'center',\n    bottom: 0,\n    itemWidth: 12,\n    itemHeight: 12,\n    textStyle: { color: ink2 },\n    pieces: [\n      { lt: 5000,               color: '#E5484D', label: '< 5K' },\n      { gte: 5000,  lt: 10000,  color: '#F5A524', label: '5-10K' },\n      { gte: 10000, lt: 15000,  color: '#6FD3A0', label: '10-15K' },\n      { gte: 15000,             color: '#15784F', label: '15K+' }\n    ]\n  },\n  calendar: {\n    top: 30,\n    left: 45,\n    right: 20,\n    cellSize: ['auto', 15],\n    range: range,\n    itemStyle: { color: empty, borderColor: gap, borderWidth: 2 },\n    splitLine: { show: false },\n    yearLabel: { show: false },\n    dayLabel: { firstDay: 1, color: ink2, nameMap: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] },\n    monthLabel: { color: ink }\n  },\n  series: [{\n    type: 'heatmap',\n    coordinateSystem: 'calendar',\n    data: points,\n    itemStyle: { borderRadius: 2, borderColor: gap, borderWidth: 2 }\n  }]\n};",
         "renderer": "canvas",
         "theme": "default",
         "editor": {
