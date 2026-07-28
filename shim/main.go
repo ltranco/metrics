@@ -104,6 +104,12 @@ func ingest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Heartbeat, stamped at wall-clock now rather than at a sample's date. The
+	// daily samples all land on local midnight, so their timestamps say nothing
+	// about when the phone last posted -- this is what the dashboard's freshness
+	// line reads. Not counted in `written`, which stays a count of real samples.
+	fmt.Fprintf(&buf, "health,src=ios ingest=1 %d\n", time.Now().UnixNano())
+
 	resp, err := http.Post(vmURL, "text/plain", &buf)
 	if err != nil {
 		log.Printf("upstream post: %v", err)

@@ -6,7 +6,7 @@
     "life",
     "health"
   ],
-  "timezone": "browser",
+  "timezone": "America/Los_Angeles",
   "weekStart": "monday",
   "editable": true,
   "graphTooltip": 1,
@@ -374,6 +374,50 @@
         }
       },
       "maxDataPoints": 10000
+    },
+    {
+      "id": 8,
+      "type": "volkovlabs-echarts-panel",
+      "title": "",
+      "description": "Freshness line. Daily samples are all stamped at local midnight, so their timestamps say nothing about when the phone last posted; the shim writes a separate health_ingest heartbeat at wall-clock time on every successful /ingest. Bare selector on purpose -- maxStalenessInterval=720h carries the last heartbeat forward, which is exactly what 'how stale is this' needs. Always rendered in Pacific, whatever timezone the viewer is in.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "transparent": true,
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
+          "editorMode": "code",
+          "expr": "timestamp(health_ingest)",
+          "legendFormat": "last ingest",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "getOption": "// Business Charts v7: single `context` arg.\n// One instant sample: the epoch seconds of the last /ingest heartbeat.\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\nconst ink = (theme && theme.colors) ? theme.colors.text.secondary : '#8B8D98';\n\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\n\nlet epoch = null;\nconst frame = data.series && data.series[0];\nif (frame) {\n  const vf = frame.fields.find((f) => f.type === 'number');\n  const vs = arr(vf);\n  for (let i = vs.length - 1; i >= 0; i--) {\n    const v = vs[i];\n    if (v !== null && v !== undefined && !Number.isNaN(v)) { epoch = v; break; }\n  }\n}\n\nlet text;\nif (epoch === null) {\n  text = 'no sync recorded in the last 30 days';\n} else {\n  // Always Pacific, whatever timezone the phone or laptop is in.\n  const stamp = new Intl.DateTimeFormat('en-US', {\n    timeZone: 'America/Los_Angeles',\n    weekday: 'short', month: 'short', day: 'numeric',\n    hour: 'numeric', minute: '2-digit', hour12: true,\n    timeZoneName: 'short'\n  }).format(new Date(epoch * 1000));\n\n  const s = Math.max(0, Math.round(Date.now() / 1000 - epoch));\n  const age = s < 90 ? s + 's ago'\n    : s < 5400 ? Math.round(s / 60) + 'm ago'\n    : s < 172800 ? Math.floor(s / 3600) + 'h ' + Math.round((s % 3600) / 60) + 'm ago'\n    : Math.floor(s / 86400) + 'd ago';\n\n  text = 'last sync ' + stamp + '  \u00b7  ' + age;\n}\n\nreturn {\n  animationDuration: 0,\n  title: {\n    text: text,\n    left: 'center',\n    top: 'center',\n    textStyle: { color: ink, fontSize: 11, fontWeight: 'normal' }\n  }\n};\n",
+        "renderer": "canvas",
+        "theme": "default",
+        "editor": {
+          "format": "auto",
+          "height": 300
+        }
+      }
     }
   ]
 }
