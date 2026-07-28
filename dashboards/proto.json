@@ -33,9 +33,9 @@
     },
     {
       "id": 1,
-      "type": "barchart",
+      "type": "volkovlabs-echarts-panel",
       "title": "Steps",
-      "description": "Pinned to now/w -> now (Monday 00:00 through now) via the panel's Relative time override, so the picker below doesn't move it. Days later in the week aren't drawn yet \u2014 Grafana has no per-panel 'time to' override, only 'time from'. The x axis is the time field rendered as time:ddd, i.e. the weekday name.",
+      "description": "Always seven bars, Mon-Su, with 0 for days that haven't happened yet. Grafana's barchart can only draw what the query range contains and there is no per-panel 'time to' override, so on a Monday it drew a single bar; ECharts lets the x axis be a fixed Mon-Su category list instead. Future days get a dimmed label so a placeholder 0 doesn't read as a zero-step day. The week is derived from today in Pacific rather than from the range, so an absolute picker range (which silently overrides timeFrom) can't reshape it. Query interval is 1h, not 1d: 1d evaluates on UTC midnights and hides today for 17 hours.",
       "datasource": {
         "type": "prometheus",
         "uid": "dft9acuz7p05cd"
@@ -55,8 +55,8 @@
             "uid": "dft9acuz7p05cd"
           },
           "editorMode": "code",
-          "expr": "last_over_time(health_step[1d])",
-          "interval": "1d",
+          "expr": "last_over_time(health_step[1h])",
+          "interval": "1h",
           "legendFormat": "steps",
           "range": true,
           "instant": false
@@ -65,71 +65,20 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "decimals": 0,
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "#3E63DD"
-          },
-          "custom": {
-            "lineWidth": 0,
-            "fillOpacity": 85,
-            "gradientMode": "none",
-            "axisPlacement": "auto",
-            "axisSoftMin": 0,
-            "axisBorderShow": false,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "#3E63DD",
-                "value": null
-              }
-            ]
-          }
+          "decimals": 0
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byType",
-              "options": "time"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "time:ddd"
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
-        "orientation": "vertical",
-        "barRadius": 0.15,
-        "barWidth": 0.6,
-        "groupWidth": 0.7,
-        "showValue": "always",
-        "stacking": "none",
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 0,
-        "fullHighlight": false,
-        "legend": {
-          "showLegend": false,
-          "displayMode": "list",
-          "placement": "bottom",
-          "calcs": []
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
+        "getOption": "// Business Charts v7: single `context` arg.\n// Always seven bars, Mon-Su. Days with no sample yet render as 0 rather than\n// being absent -- Grafana's barchart can only draw what the range contains, and\n// there is no per-panel \"time to\" override, which is why this is ECharts.\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink2 = c ? c.text.secondary : '#8B8D98';\nconst grid = c ? c.border.weak : '#2a2d33';\nconst STEPS = '#3E63DD';\n\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst WD = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };\n\n// Everything resolved in Pacific, whatever timezone the viewer is in.\nconst ptFmt = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'America/Los_Angeles',\n  year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short'\n});\nconst pt = (ms) => {\n  const p = ptFmt.formatToParts(new Date(ms));\n  const get = (t) => p.find((x) => x.type === t).value;\n  return { ymd: get('year') + '-' + get('month') + '-' + get('day'), wd: get('weekday') };\n};\n// Anchor date arithmetic at UTC noon so +/- a day never trips over DST.\nconst noon = (ymd) => { const p = ymd.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2], 12); };\nconst shift = (ms, n) => new Date(ms + n * 86400000).toISOString().slice(0, 10);\n\n// one value per local day, last write wins (points land on UTC-aligned steps)\nconst byDay = new Map();\nconst frame = data.series && data.series[0];\nif (frame) {\n  const tf = frame.fields.find((f) => f.type === 'time');\n  const vf = frame.fields.find((f) => f.type === 'number');\n  const ts = arr(tf), vs = arr(vf);\n  for (let i = 0; i < ts.length; i++) {\n    const v = vs[i];\n    if (v === null || v === undefined || Number.isNaN(v)) { continue; }\n    byDay.set(pt(ts[i]).ymd, v);\n  }\n}\n\n// Build Mon-Su for the week containing today, independent of the panel range:\n// an absolute picker range silently overrides timeFrom (a known trap here).\nconst today = pt(Date.now());\nconst monday = noon(shift(noon(today.ymd), -WD[today.wd]));\nconst days = [];\nfor (let i = 0; i < 7; i++) {\n  const ymd = shift(monday, i);\n  days.push({ ymd, label: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],\n              value: byDay.has(ymd) ? byDay.get(ymd) : 0,\n              future: ymd > today.ymd });\n}\n\nconst series = days.map((d) => ({\n  value: Math.round(d.value),\n  // Future days are placeholders, not zero-step days -- say so quietly.\n  label: { color: d.future ? grid : ink2 }\n}));\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  grid: { left: 60, right: 20, top: 28, bottom: 30 },\n  tooltip: { trigger: 'axis', valueFormatter: (v) => Math.round(v).toLocaleString() + ' steps' },\n  xAxis: {\n    type: 'category', data: days.map((d) => d.label),\n    axisTick: { show: false },\n    axisLabel: { color: ink2 },\n    axisLine: { lineStyle: { color: grid } }\n  },\n  yAxis: {\n    type: 'value', min: 0,\n    axisLabel: { color: ink2, formatter: (v) => (v >= 1000 ? (v / 1000) + 'K' : v) },\n    splitLine: { lineStyle: { color: grid } }\n  },\n  series: [{\n    name: 'steps', type: 'bar',\n    data: series,\n    barWidth: '60%',\n    itemStyle: { color: STEPS, borderRadius: [3, 3, 0, 0] },\n    showBackground: true,\n    backgroundStyle: { color: grid, opacity: 0.18, borderRadius: [3, 3, 0, 0] },\n    label: {\n      show: true, position: 'top', fontSize: 11,\n      formatter: (p) => Math.round(p.value).toLocaleString()\n    }\n  }]\n};\n",
+        "renderer": "canvas",
+        "theme": "default",
+        "editor": {
+          "format": "auto",
+          "height": 600
         }
-      }
+      },
+      "maxDataPoints": 10000
     },
     {
       "id": 2,
