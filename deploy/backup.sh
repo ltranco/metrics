@@ -75,14 +75,24 @@ log "Snapshot $SNAP"
 
 [ -d "$VM_DATA/snapshots/$SNAP" ] || die "snapshot directory not found at $VM_DATA/snapshots/$SNAP"
 
+# -h is load-bearing. A VictoriaMetrics snapshot directory is not the data: it holds
+# symlinks (data/small, data/big, data/indexdb) pointing back into the live tree, which in
+# turn hold hardlinks to the real parts. Without --dereference, tar faithfully archives four
+# symlinks and one metadata file, producing a 4KB "backup" of a 1.3MB database that restores
+# to nothing.
 log "Archiving..."
-tar -czf "$BACKUP_DIR/$FILE" -C "$VM_DATA/snapshots" "$SNAP" || die "tar failed"
+tar -czhf "$BACKUP_DIR/$FILE" -C "$VM_DATA/snapshots" "$SNAP" || die "tar failed"
 SIZE=$(du -h "$BACKUP_DIR/$FILE" | cut -f1)
 log "Archive $FILE ($SIZE)"
 
-# Prove the archive is readable before it counts as a backup. A tar that only fails on
-# restore is worse than no backup, because you stop worrying about it.
-tar -tzf "$BACKUP_DIR/$FILE" >/dev/null || die "archive is unreadable"
+# Readability is not enough: the empty archive above was perfectly readable. Count what
+# actually went in against what the snapshot holds, so a backup that captured nothing fails
+# loudly tonight rather than at restore time in a year.
+SNAP_FILES=$(find -L "$VM_DATA/snapshots/$SNAP" -type f 2>/dev/null | wc -l)
+TAR_FILES=$(tar -tzf "$BACKUP_DIR/$FILE" 2>/dev/null | grep -vc '/$') || true
+log "Archive holds $TAR_FILES files; snapshot has $SNAP_FILES"
+[ "$SNAP_FILES" -gt 0 ] || die "snapshot contained no files"
+[ "$TAR_FILES" -ge "$SNAP_FILES" ] || die "archive holds $TAR_FILES of $SNAP_FILES files, refusing to call it a backup"
 
 log "Uploading to $REMOTE..."
 rclone copy "$BACKUP_DIR/$FILE" "$REMOTE" || die "rclone upload failed (archive kept locally)"
