@@ -1,7 +1,7 @@
 {
   "uid": "gains",
   "title": "gains",
-  "description": "Workout log from the gains app. One sample per set, so sum_over_time is the real total and count_over_time is the real set count. One panel per measurement kind, so every series in a panel shares a y axis.",
+  "description": "Workout log from the gains app. Three panels, one per measurement kind, so every series in a panel shares a y axis. Each point is the SUM of that exercise over the bucket, never an average — the bucket follows the zoom, so a week-wide view gives that week's total.",
   "tags": ["gains", "training"],
   "timezone": "America/Los_Angeles",
   "editable": true,
@@ -12,155 +12,17 @@
   "templating": { "list": [] },
   "panels": [
     {
-      "type": "row",
-      "title": "Last 24 hours",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
-      "collapsed": false,
-      "panels": []
-    },
-    {
-      "type": "stat",
-      "title": "Volume",
-      "description": "Sum of weight x reps across every loaded set in the trailing 24 hours.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(sum_over_time({__name__=~\"health_.+_volume\"}[24h]))",
-          "instant": true,
-          "legendFormat": "volume"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "suffix:kg",
-          "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "#3987e5" },
-          "noValue": "0"
-        },
-        "overrides": []
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "value",
-        "justifyMode": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Loaded sets",
-      "description": "Sets carrying a weight. Rep-only and timed work is not counted here.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(count_over_time({__name__=~\"health_.+_volume\"}[24h]))",
-          "instant": true,
-          "legendFormat": "sets"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "#199e70" },
-          "noValue": "0"
-        },
-        "overrides": []
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "value",
-        "justifyMode": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Time under tension",
-      "description": "Seconds of held or timed work — planks, dead hangs, cardio with a logged time.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(sum_over_time({__name__=~\"health_.+_seconds\"}[24h]))",
-          "instant": true,
-          "legendFormat": "seconds"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "#199e70" },
-          "noValue": "0"
-        },
-        "overrides": []
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "value",
-        "justifyMode": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Reps",
-      "description": "Every rep logged in the trailing 24 hours, loaded or not.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(sum_over_time({__name__=~\"health_.+_reps\"}[24h]))",
-          "instant": true,
-          "legendFormat": "reps"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "#199e70" },
-          "noValue": "0"
-        },
-        "overrides": []
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "value",
-        "justifyMode": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
-      }
-    },
-    {
-      "type": "row",
-      "title": "By measurement kind",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
-      "collapsed": false,
-      "panels": []
-    },
-    {
       "type": "timeseries",
-      "title": "Volume — weight-based exercises",
-      "description": "Trailing-24h sum of weight x reps, one series per exercise. Everything here is kilograms, so the y axis is comparable across exercises.",
+      "title": "Volume",
+      "description": "Sum of weight x reps per exercise, per bucket. Bucket width follows the zoom via $__interval, so a week-wide view shows that week's total rather than an average of it.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 7 },
-      "maxDataPoints": 10000,
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "maxDataPoints": 200,
       "interval": "1h",
       "targets": [
         {
           "refId": "A",
-          "expr": "sum_over_time({__name__=~\"health_.+_volume\"}[1d]) keep_metric_names",
+          "expr": "sum_over_time({__name__=~\"health_.+_volume\"}[$__interval]) keep_metric_names",
           "legendFormat": "{{__name__}}"
         }
       ],
@@ -171,12 +33,13 @@
         "defaults": {
           "unit": "suffix:kg",
           "decimals": 0,
+          "min": 0,
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 8,
-            "showPoints": "auto",
+            "showPoints": "always",
             "pointSize": 8,
             "spanNulls": false,
             "axisLabel": "kg",
@@ -192,57 +55,16 @@
     },
     {
       "type": "timeseries",
-      "title": "Duration — timed exercises",
-      "description": "Trailing-24h seconds held. Planks, dead hangs, wall sits, and cardio with a logged time.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
-      "maxDataPoints": 10000,
-      "interval": "1h",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum_over_time({__name__=~\"health_.+_seconds\"}[1d]) keep_metric_names",
-          "legendFormat": "{{__name__}}"
-        }
-      ],
-      "transformations": [
-        { "id": "renameByRegex", "options": { "regex": "health_(.+)_seconds", "renamePattern": "$1" } }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "decimals": 0,
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 8,
-            "showPoints": "auto",
-            "pointSize": 8,
-            "spanNulls": false,
-            "axisLabel": "seconds",
-            "gradientMode": "none"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom", "calcs": [] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      }
-    },
-    {
-      "type": "timeseries",
       "title": "Reps",
-      "description": "Trailing-24h rep count, one series per exercise. Loaded movements appear here too — a rep is a rep, so the y axis still holds.",
+      "description": "Sum of reps per exercise, per bucket. Loaded lifts appear here as well as bodyweight work — a rep is a rep, so the y axis still holds.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
-      "maxDataPoints": 10000,
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 9 },
+      "maxDataPoints": 200,
       "interval": "1h",
       "targets": [
         {
           "refId": "A",
-          "expr": "sum_over_time({__name__=~\"health_.+_reps\"}[1d]) keep_metric_names",
+          "expr": "sum_over_time({__name__=~\"health_.+_reps\"}[$__interval]) keep_metric_names",
           "legendFormat": "{{__name__}}"
         }
       ],
@@ -253,12 +75,13 @@
         "defaults": {
           "unit": "none",
           "decimals": 0,
+          "min": 0,
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 8,
-            "showPoints": "auto",
+            "showPoints": "always",
             "pointSize": 8,
             "spanNulls": false,
             "axisLabel": "reps",
@@ -273,41 +96,46 @@
       }
     },
     {
-      "type": "row",
-      "title": "Every set",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
-      "collapsed": false,
-      "panels": []
-    },
-    {
-      "type": "table",
-      "title": "Raw samples",
-      "description": "One row per stored sample. This is the granularity the app writes and reads back — the proof that sets survive the round trip rather than being flattened into daily totals.",
+      "type": "timeseries",
+      "title": "Time",
+      "description": "Sum of seconds per exercise, per bucket. Planks, dead hangs, wall sits — and any cardio with a logged time.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 26 },
-      "maxDataPoints": 10000,
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 18 },
+      "maxDataPoints": 200,
+      "interval": "1h",
       "targets": [
         {
           "refId": "A",
-          "expr": "{__name__=~\"health_.+_(weight|reps|volume|seconds|metres)\"}",
-          "format": "time_series",
+          "expr": "sum_over_time({__name__=~\"health_.+_seconds\"}[$__interval]) keep_metric_names",
           "legendFormat": "{{__name__}}"
         }
       ],
       "transformations": [
-        { "id": "seriesToRows", "options": {} },
-        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Time", "desc": true }] } }
+        { "id": "renameByRegex", "options": { "regex": "health_(.+)_seconds", "renamePattern": "$1" } }
       ],
       "fieldConfig": {
-        "defaults": { "custom": { "align": "auto", "filterable": true } },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Value" },
-            "properties": [{ "id": "custom.align", "value": "right" }]
+        "defaults": {
+          "unit": "s",
+          "decimals": 0,
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 8,
+            "spanNulls": false,
+            "axisLabel": "seconds",
+            "gradientMode": "none"
           }
-        ]
+        },
+        "overrides": []
       },
-      "options": { "showHeader": true, "footer": { "show": false, "reducer": ["sum"] } }
+      "options": {
+        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom", "calcs": [] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
     }
   ]
 }
