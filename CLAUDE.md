@@ -165,30 +165,36 @@ These all cost real debugging time. Do not rediscover them.
 5. **`/api/v1/label/__name__/values` defaults to the last 24h.** Pass explicit
    `start`/`end` when inspecting backdated data or it looks empty.
 
-6. **iOS Shortcuts sends numbers as quoted strings** (`"6151"`) — handled by
+6. **Rollup functions drop `__name__`, and identical leftover labels collide.**
+   `sum_over_time({__name__=~"health_.+_volume"}[1d])` fails outright with *duplicate output
+   timeseries: {src="ios"}* — every exercise reduces to the same label set once the name is
+   gone. Append MetricsQL's **`keep_metric_names`**. Aggregations like `sum(...)` hide this,
+   so a stat panel can work while the graph beside it is broken.
+
+7. **iOS Shortcuts sends numbers as quoted strings** (`"6151"`) — handled by
    `flexFloat` in the shim — **and sends `0` when HealthKit has no sample.**
    Weight panels filter with `> 0`; nulls never reach storage.
 
-7. **The `deploy` user's sudoers allowlist has no `mkdir`**, and `/opt` is
+8. **The `deploy` user's sudoers allowlist has no `mkdir`**, and `/opt` is
    root-owned. `/opt/metrics` and `/opt/metrics-repo` are pre-created and
    chowned by hand. Don't add `sudo mkdir` to `deploy.sh`.
 
-8. **gold's `deploy.sh` runs `docker system prune -af --filter until=72h`.**
+9. **gold's `deploy.sh` runs `docker system prune -af --filter until=72h`.**
    Metrics images survive only while the containers are running.
 
-9. **Grafana panel time overrides are ignored when the dashboard range is
+10. **Grafana panel time overrides are ignored when the dashboard range is
    absolute.** The pinned week row silently follows the picker if the user
    zooms to a fixed window.
 
-10. **Business Charts v7 compiles the script as `new Function("context", …)`.**
+11. **Business Charts v7 compiles the script as `new Function("context", …)`.**
     Bare `data`/`theme` are not in scope. Use `context.panel.data` and
     `context.grafana.theme`. Shape:
     `{grafana:{theme, replaceVariables, …}, panel:{data, chart}, echarts, ecStat}`.
 
-11. **Grafana's `gradientMode: opacity` only ramps a flat fill's alpha.** It
+12. **Grafana's `gradientMode: opacity` only ramps a flat fill's alpha.** It
     reads as almost nothing. Real multi-stop gradients need ECharts.
 
-12. **`tim012432-calendarheatmap-panel` cannot do threshold colours.** Its
+13. **`tim012432-calendarheatmap-panel` cannot do threshold colours.** Its
     `module.js` has zero references to `thresholds`/`fieldConfig`/`color.mode`;
     `colorScheme` is a single-hue ramp. It's installed but unused.
 

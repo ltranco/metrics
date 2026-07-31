@@ -160,7 +160,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum_over_time({__name__=~\"health_.+_volume\"}[1d])",
+          "expr": "sum_over_time({__name__=~\"health_.+_volume\"}[1d]) keep_metric_names",
           "legendFormat": "{{__name__}}"
         }
       ],
@@ -201,7 +201,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum_over_time({__name__=~\"health_.+_seconds\"}[1d])",
+          "expr": "sum_over_time({__name__=~\"health_.+_seconds\"}[1d]) keep_metric_names",
           "legendFormat": "{{__name__}}"
         }
       ],
@@ -242,7 +242,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum_over_time({__name__=~\"health_.+_reps\"}[1d])",
+          "expr": "sum_over_time({__name__=~\"health_.+_reps\"}[1d]) keep_metric_names",
           "legendFormat": "{{__name__}}"
         }
       ],
