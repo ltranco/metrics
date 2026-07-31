@@ -1,23 +1,39 @@
 {
   "uid": "gains",
   "title": "gains",
-  "description": "Workout log from the gains app. Three panels, one per measurement kind, so every series in a panel shares a y axis. Each point is the SUM of that exercise over the bucket, never an average — the bucket follows the zoom, so a week-wide view gives that week's total.",
-  "tags": ["gains", "training"],
+  "description": "Workout log from the gains app. Three panels, one per measurement kind, so every series in a panel shares a y axis. Each bar is the SUM over its bucket, never an average; bucket width follows the zoom, so a week-wide view gives that week's total.",
+  "tags": [
+    "gains",
+    "training"
+  ],
   "timezone": "America/Los_Angeles",
   "editable": true,
   "schemaVersion": 39,
   "version": 0,
   "refresh": "5m",
-  "time": { "from": "now-90d", "to": "now" },
-  "templating": { "list": [] },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
   "panels": [
     {
       "type": "timeseries",
       "title": "Volume",
       "description": "Sum of weight x reps per exercise, per bucket. Bucket width follows the zoom via $__interval, so a week-wide view shows that week's total rather than an average of it.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
-      "maxDataPoints": 200,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "maxDataPoints": 100,
       "interval": "1h",
       "targets": [
         {
@@ -27,39 +43,67 @@
         }
       ],
       "transformations": [
-        { "id": "renameByRegex", "options": { "regex": "health_(.+)_volume", "renamePattern": "$1" } }
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "health_(.+)_volume",
+            "renamePattern": "$1"
+          }
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "suffix:kg",
           "decimals": 0,
           "min": 0,
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 8,
-            "showPoints": "always",
-            "pointSize": 8,
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 75,
             "spanNulls": false,
             "axisLabel": "kg",
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "barAlignment": 0,
+            "barWidthFactor": 0.9,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom", "calcs": [] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Reps",
-      "description": "Sum of reps per exercise, per bucket. Loaded lifts appear here as well as bodyweight work — a rep is a rep, so the y axis still holds.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 9 },
-      "maxDataPoints": 200,
+      "description": "Sum of reps per exercise, per bucket. Loaded lifts appear here as well as bodyweight work \u2014 a rep is a rep, so the y axis still holds.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "maxDataPoints": 100,
       "interval": "1h",
       "targets": [
         {
@@ -69,39 +113,67 @@
         }
       ],
       "transformations": [
-        { "id": "renameByRegex", "options": { "regex": "health_(.+)_reps", "renamePattern": "$1" } }
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "health_(.+)_reps",
+            "renamePattern": "$1"
+          }
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
           "decimals": 0,
           "min": 0,
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 8,
-            "showPoints": "always",
-            "pointSize": 8,
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 75,
             "spanNulls": false,
             "axisLabel": "reps",
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "barAlignment": 0,
+            "barWidthFactor": 0.9,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom", "calcs": [] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "type": "timeseries",
       "title": "Time",
-      "description": "Sum of seconds per exercise, per bucket. Planks, dead hangs, wall sits — and any cardio with a logged time.",
-      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 18 },
-      "maxDataPoints": 200,
+      "description": "Sum of seconds per exercise, per bucket. Planks, dead hangs, wall sits \u2014 and any cardio with a logged time.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "maxDataPoints": 100,
       "interval": "1h",
       "targets": [
         {
@@ -111,30 +183,50 @@
         }
       ],
       "transformations": [
-        { "id": "renameByRegex", "options": { "regex": "health_(.+)_seconds", "renamePattern": "$1" } }
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "health_(.+)_seconds",
+            "renamePattern": "$1"
+          }
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "s",
           "decimals": 0,
           "min": 0,
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 8,
-            "showPoints": "always",
-            "pointSize": 8,
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 75,
             "spanNulls": false,
             "axisLabel": "seconds",
-            "gradientMode": "none"
+            "gradientMode": "none",
+            "barAlignment": 0,
+            "barWidthFactor": 0.9,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom", "calcs": [] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     }
   ]
