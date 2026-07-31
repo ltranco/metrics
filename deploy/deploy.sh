@@ -28,14 +28,15 @@ if [ ! -f /etc/nginx/.htpasswd-metrics ]; then
     exit 1
 fi
 
-# nginx.conf declares the 443 listener itself, so the cert has to exist before the config
-# will load. On a fresh box, bootstrap it once with a temporary 80-only vhost:
+# No cert check here, deliberately. /etc/letsencrypt/live is root-only, so any `[ -f ]` test
+# against it is always false for the deploy user -- which is the bug that used to make this
+# script run `certbot --nginx` on *every* deploy. That was load-bearing by accident: certbot
+# re-added the 443 block that the cp below had just deleted from nginx.conf. The vhost is
+# declared in the repo now, so certbot is out of the loop entirely.
+#
+# `sudo nginx -t` below runs as root and fails loudly if the cert is missing, which is the
+# right check. To bootstrap a fresh box, get the cert first with a temporary 80-only vhost:
 #   sudo certbot certonly --nginx -d metrics.ltran.co
-if [ ! -f /etc/letsencrypt/live/$DOMAIN/fullchain.pem ]; then
-    echo "ERROR: no certificate for $DOMAIN, and nginx.conf needs one to load."
-    echo "  sudo certbot certonly --nginx -d $DOMAIN --non-interactive --agree-tos --email $EMAIL"
-    exit 1
-fi
 
 # The read API accepts either basic auth (Grafana) or the ingest bearer token (apps that
 # already hold it). nginx can't check a bearer itself, so a map turns a matching
