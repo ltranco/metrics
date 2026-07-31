@@ -1,7 +1,7 @@
 {
   "uid": "gains",
   "title": "gains",
-  "description": "Workout log from the gains app. One sample per set, so sum_over_time is the real total and count_over_time is the real set count. Series colours validated with the dataviz palette checker against the dark panel surface.",
+  "description": "Workout log from the gains app. One sample per set, so sum_over_time is the real total and count_over_time is the real set count. One panel per measurement kind, so every series in a panel shares a y axis.",
   "tags": ["gains", "training"],
   "timezone": "America/Los_Angeles",
   "editable": true,
@@ -9,26 +9,7 @@
   "version": 0,
   "refresh": "5m",
   "time": { "from": "now-90d", "to": "now" },
-  "templating": {
-    "list": [
-      {
-        "name": "exercise",
-        "label": "Exercise",
-        "type": "query",
-        "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-        "definition": "label_values(__name__)",
-        "query": { "qryType": 1, "query": "label_values(__name__)", "refId": "exerciseVar" },
-        "regex": "/^health_(.+)_volume$/",
-        "multi": true,
-        "includeAll": true,
-        "allValue": ".+",
-        "current": { "text": ["All"], "value": ["$__all"] },
-        "sort": 1,
-        "refresh": 2,
-        "hide": 0
-      }
-    ]
-  },
+  "templating": { "list": [] },
   "panels": [
     {
       "type": "row",
@@ -53,7 +34,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "masskg",
+          "unit": "suffix:kg",
           "decimals": 0,
           "color": { "mode": "fixed", "fixedColor": "#3987e5" },
           "noValue": "0"
@@ -71,7 +52,7 @@
     {
       "type": "stat",
       "title": "Loaded sets",
-      "description": "Count of sets carrying a weight. Rep-only and timed work is not counted here.",
+      "description": "Sets carrying a weight. Rep-only and timed work is not counted here.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
       "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
       "targets": [
@@ -84,7 +65,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "decimals": 0,
           "color": { "mode": "fixed", "fixedColor": "#199e70" },
           "noValue": "0"
@@ -102,7 +83,7 @@
     {
       "type": "stat",
       "title": "Time under tension",
-      "description": "Total seconds of held or timed work — planks, dead hangs, cardio with a logged time.",
+      "description": "Seconds of held or timed work — planks, dead hangs, cardio with a logged time.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
       "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
       "targets": [
@@ -146,7 +127,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "decimals": 0,
           "color": { "mode": "fixed", "fixedColor": "#199e70" },
           "noValue": "0"
@@ -163,37 +144,38 @@
     },
     {
       "type": "row",
-      "title": "Per exercise",
+      "title": "By measurement kind",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
       "collapsed": false,
       "panels": []
     },
     {
       "type": "timeseries",
-      "title": "$exercise — volume",
-      "description": "Trailing-24h sum of weight x reps. One panel per selected exercise (small multiples) rather than many series in one chart, so identity never depends on colour.",
+      "title": "Volume — weight-based exercises",
+      "description": "Trailing-24h sum of weight x reps, one series per exercise. Everything here is kilograms, so the y axis is comparable across exercises.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 7 },
-      "repeat": "exercise",
-      "repeatDirection": "h",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 7 },
       "maxDataPoints": 10000,
       "interval": "1h",
       "targets": [
         {
           "refId": "A",
-          "expr": "sum_over_time(health_${exercise}_volume[1d])",
-          "legendFormat": "volume"
+          "expr": "sum_over_time({__name__=~\"health_.+_volume\"}[1d])",
+          "legendFormat": "{{__name__}}"
         }
+      ],
+      "transformations": [
+        { "id": "renameByRegex", "options": { "regex": "health_(.+)_volume", "renamePattern": "$1" } }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "masskg",
+          "unit": "suffix:kg",
           "decimals": 0,
-          "color": { "mode": "fixed", "fixedColor": "#3987e5" },
+          "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
-            "fillOpacity": 12,
+            "fillOpacity": 8,
             "showPoints": "auto",
             "pointSize": 8,
             "spanNulls": false,
@@ -204,54 +186,96 @@
         "overrides": []
       },
       "options": {
-        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom", "calcs": [] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
       }
     },
     {
       "type": "timeseries",
-      "title": "$exercise — top set",
-      "description": "Heaviest single set in the trailing 24h. This is the strength line; volume conflates going heavy with doing lots.",
+      "title": "Duration — timed exercises",
+      "description": "Trailing-24h seconds held. Planks, dead hangs, wall sits, and cardio with a logged time.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 15 },
-      "repeat": "exercise",
-      "repeatDirection": "h",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
       "maxDataPoints": 10000,
       "interval": "1h",
       "targets": [
         {
           "refId": "A",
-          "expr": "max_over_time(health_${exercise}_weight[1d])",
-          "legendFormat": "top set"
+          "expr": "sum_over_time({__name__=~\"health_.+_seconds\"}[1d])",
+          "legendFormat": "{{__name__}}"
         }
+      ],
+      "transformations": [
+        { "id": "renameByRegex", "options": { "regex": "health_(.+)_seconds", "renamePattern": "$1" } }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "masskg",
-          "decimals": 1,
-          "color": { "mode": "fixed", "fixedColor": "#199e70" },
+          "unit": "s",
+          "decimals": 0,
+          "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
-            "fillOpacity": 0,
+            "fillOpacity": 8,
             "showPoints": "auto",
             "pointSize": 8,
             "spanNulls": false,
-            "axisLabel": "kg",
+            "axisLabel": "seconds",
             "gradientMode": "none"
           }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom", "calcs": [] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Reps",
+      "description": "Trailing-24h rep count, one series per exercise. Loaded movements appear here too — a rep is a rep, so the y axis still holds.",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
+      "maxDataPoints": 10000,
+      "interval": "1h",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum_over_time({__name__=~\"health_.+_reps\"}[1d])",
+          "legendFormat": "{{__name__}}"
+        }
+      ],
+      "transformations": [
+        { "id": "renameByRegex", "options": { "regex": "health_(.+)_reps", "renamePattern": "$1" } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 8,
+            "spanNulls": false,
+            "axisLabel": "reps",
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom", "calcs": [] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
       }
     },
     {
       "type": "row",
       "title": "Every set",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
       "collapsed": false,
       "panels": []
     },
@@ -260,7 +284,7 @@
       "title": "Raw samples",
       "description": "One row per stored sample. This is the granularity the app writes and reads back — the proof that sets survive the round trip rather than being flattened into daily totals.",
       "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 24 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 26 },
       "maxDataPoints": 10000,
       "targets": [
         {
@@ -272,14 +296,7 @@
       ],
       "transformations": [
         { "id": "seriesToRows", "options": {} },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "renameByName": { "Time": "When", "Metric": "Metric", "Value": "Value" }
-          }
-        },
-        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "When", "desc": true }] } }
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Time", "desc": true }] } }
       ],
       "fieldConfig": {
         "defaults": { "custom": { "align": "auto", "filterable": true } },

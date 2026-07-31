@@ -199,10 +199,10 @@ written by the gains app — see `~/dev/gains/CONTRACT.md`. Push either with
 `./scripts/push-dashboard.sh dashboards/<file>.json`; the filename matches the uid so they
 can't drift.
 
-**The service account can only read `proto` back.** `GET /api/dashboards/uid/gains` returns
-403 `dashboards:read` — the token was granted on `proto` specifically, not org-wide. Pushes to
-`gains` still succeed; you just can't verify by reading it back the way the workflow above
-describes. Grant the `dashboard-sync` account access to the new dashboard if you want that.
+**A newly created dashboard is not immediately readable back.** `GET /api/dashboards/uid/<new>`
+returned 403 `dashboards:read` for a couple of minutes after `gains` was first pushed, then
+started working on its own — Grafana takes a moment to materialise the creator's permissions.
+Don't go granting roles; wait and retry.
 
 ### `gains`
 
