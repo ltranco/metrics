@@ -43,6 +43,8 @@ in the web UI.
 | `shim/Dockerfile` | multi-stage → `scratch`, 6.75MB image, ~5MiB resident |
 | `deploy/deploy.sh` | runs on the box: nginx, certbot, compose, health gate |
 | `deploy/docker-compose.prod.yml` | VictoriaMetrics + shim |
+| `deploy/backup.sh` | nightly VM snapshot -> gzip -> `gdrive:metrics-backups` |
+| `deploy/install-cron.sh` | puts that in root's crontab at 03:00; run once |
 | `deploy/nginx.conf` | `/ingest` + read-API allowlist, everything else 404 |
 | `dashboards/proto.json` | the dashboard, source of truth |
 | `scripts/push-dashboard.sh` | pushes that JSON to Grafana over the API |
@@ -95,6 +97,26 @@ Grafana Cloud: stack `ltranco.grafana.net`, Prometheus datasource uid
 Read the ingest token with `ssh linode 'cat /opt/metrics/.env'`. To rotate:
 write a new value, `cd /opt/metrics && docker compose up -d`, update the
 Shortcut.
+
+## Backups
+
+`deploy/backup.sh`, root crontab, **03:00 daily**. Takes a VictoriaMetrics snapshot via
+`POST /snapshot/create`, tars it, verifies the archive is readable, uploads to
+`gdrive:metrics-backups` with rclone, prunes local copies past 30 days, and deletes the
+snapshot on the way out (including on failure, via a trap).
+
+Snapshot rather than tarring the live directory: VM is mid-merge at arbitrary moments and a
+copy taken then isn't guaranteed to load. Snapshots are hardlinks, so they cost almost nothing
+but pin blocks until deleted.
+
+Failures go to Discord. `NOTIFY_SUCCESS=1` also pings on success, which is only there to prove
+it works; set it to 0 once you trust it. `DISCORD_WEBHOOK` lives in `/opt/metrics/.env`.
+
+**Never assemble the Discord payload by hand.** gold's `backup-db.sh` does, and its source
+wraps mid-string, so a literal newline lands inside the JSON value and Discord rejects it with
+`code 50109 invalid JSON`. That has been failing silently for months, which means a *failed*
+gold backup would also fail to tell anyone. `backup.sh` builds the body with
+`python3 -c 'json.dumps(...)'` instead.
 
 ## Workflows
 
