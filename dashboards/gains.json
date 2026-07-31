@@ -1,0 +1,296 @@
+{
+  "uid": "gains",
+  "title": "gains",
+  "description": "Workout log from the gains app. One sample per set, so sum_over_time is the real total and count_over_time is the real set count. Series colours validated with the dataviz palette checker against the dark panel surface.",
+  "tags": ["gains", "training"],
+  "timezone": "America/Los_Angeles",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "5m",
+  "time": { "from": "now-90d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "exercise",
+        "label": "Exercise",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+        "definition": "label_values(__name__)",
+        "query": { "qryType": 1, "query": "label_values(__name__)", "refId": "exerciseVar" },
+        "regex": "/^health_(.+)_volume$/",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".+",
+        "current": { "text": ["All"], "value": ["$__all"] },
+        "sort": 1,
+        "refresh": 2,
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Last 24 hours",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Volume",
+      "description": "Sum of weight x reps across every loaded set in the trailing 24 hours.",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(sum_over_time({__name__=~\"health_.+_volume\"}[24h]))",
+          "instant": true,
+          "legendFormat": "volume"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "masskg",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#3987e5" },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Loaded sets",
+      "description": "Count of sets carrying a weight. Rep-only and timed work is not counted here.",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({__name__=~\"health_.+_volume\"}[24h]))",
+          "instant": true,
+          "legendFormat": "sets"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#199e70" },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Time under tension",
+      "description": "Total seconds of held or timed work — planks, dead hangs, cardio with a logged time.",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(sum_over_time({__name__=~\"health_.+_seconds\"}[24h]))",
+          "instant": true,
+          "legendFormat": "seconds"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#199e70" },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Reps",
+      "description": "Every rep logged in the trailing 24 hours, loaded or not.",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(sum_over_time({__name__=~\"health_.+_reps\"}[24h]))",
+          "instant": true,
+          "legendFormat": "reps"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#199e70" },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Per exercise",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "$exercise — volume",
+      "description": "Trailing-24h sum of weight x reps. One panel per selected exercise (small multiples) rather than many series in one chart, so identity never depends on colour.",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 7 },
+      "repeat": "exercise",
+      "repeatDirection": "h",
+      "maxDataPoints": 10000,
+      "interval": "1h",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum_over_time(health_${exercise}_volume[1d])",
+          "legendFormat": "volume"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "masskg",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#3987e5" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "auto",
+            "pointSize": 8,
+            "spanNulls": false,
+            "axisLabel": "kg",
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "$exercise — top set",
+      "description": "Heaviest single set in the trailing 24h. This is the strength line; volume conflates going heavy with doing lots.",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 15 },
+      "repeat": "exercise",
+      "repeatDirection": "h",
+      "maxDataPoints": 10000,
+      "interval": "1h",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max_over_time(health_${exercise}_weight[1d])",
+          "legendFormat": "top set"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "masskg",
+          "decimals": 1,
+          "color": { "mode": "fixed", "fixedColor": "#199e70" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "auto",
+            "pointSize": 8,
+            "spanNulls": false,
+            "axisLabel": "kg",
+            "gradientMode": "none"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Every set",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Raw samples",
+      "description": "One row per stored sample. This is the granularity the app writes and reads back — the proof that sets survive the round trip rather than being flattened into daily totals.",
+      "datasource": { "type": "prometheus", "uid": "dft9acuz7p05cd" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 24 },
+      "maxDataPoints": 10000,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{__name__=~\"health_.+_(weight|reps|volume|seconds|metres)\"}",
+          "format": "time_series",
+          "legendFormat": "{{__name__}}"
+        }
+      ],
+      "transformations": [
+        { "id": "seriesToRows", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "renameByName": { "Time": "When", "Metric": "Metric", "Value": "Value" }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "When", "desc": true }] } }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [{ "id": "custom.align", "value": "right" }]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "footer": { "show": false, "reducer": ["sum"] } }
+    }
+  ]
+}

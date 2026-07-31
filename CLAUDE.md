@@ -192,7 +192,44 @@ These all cost real debugging time. Do not rediscover them.
     `module.js` has zero references to `thresholds`/`fieldConfig`/`color.mode`;
     `colorScheme` is a single-hue ramp. It's installed but unused.
 
-## Dashboard
+## Dashboards
+
+Two of them. `proto` is the "my life" board (steps, weight). `gains` is the workout log,
+written by the gains app — see `~/dev/gains/CONTRACT.md`. Push either with
+`./scripts/push-dashboard.sh dashboards/<file>.json`; the filename matches the uid so they
+can't drift.
+
+**The service account can only read `proto` back.** `GET /api/dashboards/uid/gains` returns
+403 `dashboards:read` — the token was granted on `proto` specifically, not org-wide. Pushes to
+`gains` still succeed; you just can't verify by reading it back the way the workflow above
+describes. Grant the `dashboard-sync` account access to the new dashboard if you want that.
+
+### `gains`
+
+Per-set data, not daily rollups — so `sum_over_time` is the true total and
+`count_over_time` the true set count, with no revision double-counting.
+
+| Panel | |
+| --- | --- |
+| Volume / Loaded sets / Time under tension / Reps | stats over a trailing 24h |
+| `$exercise` — volume | `sum_over_time(health_${exercise}_volume[1d])`, **repeated per exercise** |
+| `$exercise` — top set | `max_over_time(health_${exercise}_weight[1d])`, repeated |
+| Raw samples | table, `seriesToRows` — one row per stored sample |
+
+The exercise variable is `label_values(__name__)` filtered by `/^health_(.+)_volume$/`, with
+`refresh: 2` (on time-range change) so it doesn't hit trap 5's 24h default.
+
+**Per-exercise panels repeat rather than stacking many series in one chart.** Exercise count is
+unbounded — 173 in the app's catalog — and colour-cycled series stop being distinguishable well
+before that. Small multiples keep identity in the panel title instead of the palette.
+
+Series colours `#3987e5` (volume) and `#199e70` (top set) were validated with the `dataviz`
+skill's `validate_palette.js` against Grafana's dark panel surface `#181b1f`: all checks pass,
+all-pairs CVD ΔE 19.6. On a light surface the aqua sits at 2.82:1 contrast, under the 3:1 bar —
+the axis labels and the raw-samples table are the required relief. Don't eyeball replacements;
+re-run the script.
+
+### `proto`
 
 Two rows. **This week** is pinned via `timeFrom: "now/w"` and ignores the
 picker; **History** follows it.
