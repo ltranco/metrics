@@ -16,9 +16,10 @@ REMOTE="gdrive:metrics-backups"
 KEEP_DAYS=30
 LOG_FILE="/var/log/metrics-backup.log"
 
-# Success pings are for confirming the thing works. Set to 0 once you trust it and only
-# failures will reach Discord.
-NOTIFY_SUCCESS="${NOTIFY_SUCCESS:-1}"
+# Failures only. Both paths were confirmed working on 2026-07-31: a green message on success
+# and a red one when rclone was pointed at a remote that doesn't exist. Run with
+# NOTIFY_SUCCESS=1 to see the success ping again.
+NOTIFY_SUCCESS="${NOTIFY_SUCCESS:-0}"
 
 DATE=$(date +%Y%m%d_%H%M%S)
 FILE="metrics_vm_${DATE}.tar.gz"

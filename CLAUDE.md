@@ -121,8 +121,14 @@ Verified by restoring: extract, mount as `/victoria-metrics-data` in a throwaway
 query it back. 13 series and 410 samples, including the full step and weight history. Do this
 again if you ever change the archive step.
 
-Failures go to Discord. `NOTIFY_SUCCESS=1` also pings on success, which is only there to prove
-it works; set it to 0 once you trust it. `DISCORD_WEBHOOK` lives in `/opt/metrics/.env`.
+Failures go to Discord; success is silent. Run `NOTIFY_SUCCESS=1 /opt/metrics-repo/deploy/backup.sh`
+to see the green message again. `DISCORD_WEBHOOK` lives in `/opt/metrics/.env`, the same webhook
+gold uses.
+
+**Both notification paths were tested**, which is the step gold skipped: a green message on a
+real run, and a red one from a copy pointed at a nonexistent rclone remote. Test the failure
+path whenever you touch `notify`, because a silent alerter is indistinguishable from a working
+one right up until you need it.
 
 **Never assemble the Discord payload by hand.** gold's `backup-db.sh` does, and its source
 wraps mid-string, so a literal newline lands inside the JSON value and Discord rejects it with
