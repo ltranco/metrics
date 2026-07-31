@@ -109,6 +109,18 @@ Snapshot rather than tarring the live directory: VM is mid-merge at arbitrary mo
 copy taken then isn't guaranteed to load. Snapshots are hardlinks, so they cost almost nothing
 but pin blocks until deleted.
 
+**`tar -h` is load-bearing.** A snapshot directory is not the data. It holds *symlinks*
+(`data/small`, `data/big`, `data/indexdb`) pointing back into the live tree, which hold
+hardlinks to the real parts. Without `--dereference` tar archives four symlinks and one
+metadata file: a 4KB "backup" of a 1.3MB database that restores to nothing. The first run did
+exactly that, and the readability check passed, because an empty archive is perfectly
+readable. The script now counts files in the archive against files in the snapshot and refuses
+to call it a backup when they disagree.
+
+Verified by restoring: extract, mount as `/victoria-metrics-data` in a throwaway container,
+query it back. 13 series and 410 samples, including the full step and weight history. Do this
+again if you ever change the archive step.
+
 Failures go to Discord. `NOTIFY_SUCCESS=1` also pings on success, which is only there to prove
 it works; set it to 0 once you trust it. `DISCORD_WEBHOOK` lives in `/opt/metrics/.env`.
 
