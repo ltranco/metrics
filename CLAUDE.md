@@ -295,7 +295,8 @@ picker; **History** follows it.
 **The two calendars share one layout, keep them in step.** `cellSize: ['auto', 'auto']` so rows
 stretch to the panel height, and the legend is a vertical column on the right. The original
 fixed 15px rows plus a bottom-anchored legend left a band of dead space between them at any
-panel height; now both panels are `h: 5` with nothing to spare.
+panel height; now both panels are `h: 5` with nothing to spare. Found and fixed with the
+offline render below, then confirmed by the user in real Grafana (2026-09-19).
 
 **Plank calendar** reads `health_plank_seconds[$__range]` and `health_plank_deleted[$__range]`
 as raw instant queries (trap 14), sums surviving sets per local day, and emits a cell for
