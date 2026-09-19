@@ -286,7 +286,7 @@
         "uid": "dft9acuz7p05cd"
       },
       "gridPos": {
-        "h": 8,
+        "h": 5,
         "w": 24,
         "x": 0,
         "y": 20
@@ -314,7 +314,7 @@
         "overrides": []
       },
       "options": {
-        "getOption": "// Business Charts v7 passes a single `context` argument:\n//   { grafana: {theme, ...}, panel: {data, chart}, echarts, ecStat }\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst frame = data.series && data.series[0];\nif (!frame) { return {}; }\n\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst tf = frame.fields.find((f) => f.type === 'time');\nconst vf = frame.fields.find((f) => f.type === 'number');\nconst ts = arr(tf), vs = arr(vf);\n\n// Bucket by LOCAL calendar day; last value wins within a day.\nconst byDay = new Map();\nfor (let i = 0; i < ts.length; i++) {\n  const v = vs[i];\n  if (v === null || v === undefined || Number.isNaN(v)) { continue; }\n  const d = new Date(ts[i]);\n  const key = d.getFullYear() + '-' +\n    String(d.getMonth() + 1).padStart(2, '0') + '-' +\n    String(d.getDate()).padStart(2, '0');\n  byDay.set(key, v);\n}\nconst points = Array.from(byDay, (e) => [e[0], e[1]]);\nif (!points.length) { return {}; }\n\nconst days = points.map((p) => p[0]).sort();\nconst range = [days[0], days[days.length - 1]];\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink   = c ? c.text.primary   : '#ccc';\nconst ink2  = c ? c.text.secondary : '#888';\nconst empty = c ? c.background.secondary : '#22252b';\nconst gap   = c ? c.background.primary   : '#111217';\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  tooltip: {\n    formatter: (p) => p.value[0] + '<br/><b>' + Math.round(p.value[1]).toLocaleString() + '</b> steps'\n  },\n  visualMap: {\n    type: 'piecewise',\n    orient: 'horizontal',\n    left: 'center',\n    bottom: 0,\n    itemWidth: 12,\n    itemHeight: 12,\n    textStyle: { color: ink2 },\n    pieces: [\n      { lt: 5000,               color: '#E5484D', label: '< 5K' },\n      { gte: 5000,  lt: 10000,  color: '#F5A524', label: '5-10K' },\n      { gte: 10000, lt: 15000,  color: '#6FD3A0', label: '10-15K' },\n      { gte: 15000,             color: '#15784F', label: '15K+' }\n    ]\n  },\n  calendar: {\n    top: 30,\n    left: 45,\n    right: 20,\n    cellSize: ['auto', 15],\n    range: range,\n    itemStyle: { color: empty, borderColor: gap, borderWidth: 2 },\n    splitLine: { show: false },\n    yearLabel: { show: false },\n    dayLabel: { firstDay: 1, color: ink2, nameMap: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] },\n    monthLabel: { color: ink }\n  },\n  series: [{\n    type: 'heatmap',\n    coordinateSystem: 'calendar',\n    data: points,\n    itemStyle: { borderRadius: 2, borderColor: gap, borderWidth: 2 }\n  }]\n};",
+        "getOption": "// Business Charts v7 passes a single `context` argument:\n//   { grafana: {theme, ...}, panel: {data, chart}, echarts, ecStat }\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\nconst frame = data.series && data.series[0];\nif (!frame) { return {}; }\n\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst tf = frame.fields.find((f) => f.type === 'time');\nconst vf = frame.fields.find((f) => f.type === 'number');\nconst ts = arr(tf), vs = arr(vf);\n\n// Bucket by LOCAL calendar day; last value wins within a day.\nconst byDay = new Map();\nfor (let i = 0; i < ts.length; i++) {\n  const v = vs[i];\n  if (v === null || v === undefined || Number.isNaN(v)) { continue; }\n  const d = new Date(ts[i]);\n  const key = d.getFullYear() + '-' +\n    String(d.getMonth() + 1).padStart(2, '0') + '-' +\n    String(d.getDate()).padStart(2, '0');\n  byDay.set(key, v);\n}\nconst points = Array.from(byDay, (e) => [e[0], e[1]]);\nif (!points.length) { return {}; }\n\nconst days = points.map((p) => p[0]).sort();\nconst range = [days[0], days[days.length - 1]];\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink   = c ? c.text.primary   : '#ccc';\nconst ink2  = c ? c.text.secondary : '#888';\nconst empty = c ? c.background.secondary : '#22252b';\nconst gap   = c ? c.background.primary   : '#111217';\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  tooltip: {\n    formatter: (p) => p.value[0] + '<br/><b>' + Math.round(p.value[1]).toLocaleString() + '</b> steps'\n  },\n  visualMap: {\n    type: 'piecewise',\n    // A column on the right, beside the grid rather than under it: a legend row below\n    // costs a band of height the whole panel then has to be tall enough to hold.\n    orient: 'vertical',\n    right: 0,\n    top: 'middle',\n    itemWidth: 10,\n    itemHeight: 10,\n    itemGap: 5,\n    textStyle: { color: ink2, fontSize: 11 },\n    pieces: [\n      { lt: 5000,               color: '#E5484D', label: '< 5K' },\n      { gte: 5000,  lt: 10000,  color: '#F5A524', label: '5-10K' },\n      { gte: 10000, lt: 15000,  color: '#6FD3A0', label: '10-15K' },\n      { gte: 15000,             color: '#15784F', label: '15K+' }\n    ]\n  },\n  calendar: {\n    // Rows stretch to whatever height the panel has. A fixed cell height left the grid\n    // floating above a band of empty space with the legend stranded at the bottom.\n    top: 20,\n    bottom: 2,\n    left: 36,\n    right: 72,\n    cellSize: ['auto', 'auto'],\n    range: range,\n    itemStyle: { color: empty, borderColor: gap, borderWidth: 2 },\n    splitLine: { show: false },\n    yearLabel: { show: false },\n    dayLabel: { firstDay: 1, color: ink2, nameMap: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] },\n    monthLabel: { color: ink }\n  },\n  series: [{\n    type: 'heatmap',\n    coordinateSystem: 'calendar',\n    data: points,\n    itemStyle: { borderRadius: 2, borderColor: gap, borderWidth: 2 }\n  }]\n};",
         "renderer": "canvas",
         "theme": "default",
         "editor": {
@@ -323,6 +323,64 @@
         }
       },
       "maxDataPoints": 10000
+    },
+    {
+      "id": 9,
+      "type": "volkovlabs-echarts-panel",
+      "title": "Plank calendar",
+      "description": "Daily plank time from the gains app, same grid as the step calendar. Instant queries over a range selector return raw samples at their real timestamps, so each health_plank_deleted tombstone voids exactly the sample it points at -- a grid query would lump an edit's rewrite (1ms after its tombstone) into the voided bucket. Every day in the range gets a cell: a day with nothing logged is a 0-minute day and reads red. Bands in seconds: <60 red, 60-119 yellow, 120-239 green, 240+ dark green.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "dft9acuz7p05cd"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
+          "editorMode": "code",
+          "expr": "health_plank_seconds[$__range]",
+          "legendFormat": "plank",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dft9acuz7p05cd"
+          },
+          "editorMode": "code",
+          "expr": "health_plank_deleted[$__range]",
+          "legendFormat": "deleted",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "renderer": "canvas",
+        "theme": "default",
+        "editor": {
+          "format": "auto",
+          "height": 600
+        },
+        "getOption": "// Business Charts v7 passes a single `context` argument:\n//   { grafana: {theme, ...}, panel: {data, chart}, echarts, ecStat }\nconst data = context.panel.data;\nconst theme = context.grafana.theme;\n\n// Two instant queries over a range selector, which return RAW samples at their real\n// millisecond timestamps rather than evaluations on a grid:\n//   A  health_plank_seconds[$__range]   one sample per plank, written by gains\n//   B  health_plank_deleted[$__range]   tombstones: each voids the sample at its timestamp\n// Matching tombstones exactly needs the raw timestamps. On a grid, a tombstone and an edit's\n// rewrite 1ms later share a bucket and the correction is voided along with the original.\nconst arr = (f) => (f && f.values && f.values.toArray) ? f.values.toArray() : (f ? f.values : []);\nconst frames = (data.series || []).filter((f) => f && f.fields && f.fields.length);\nconst nameOf = (frame) => {\n  const vf = frame.fields.find((f) => f.type === 'number');\n  return String((vf && vf.labels && vf.labels.__name__) || (vf && vf.name) || frame.name || '');\n};\nconst isTomb = (frame) => frame.refId === 'B' || /_deleted$/.test(nameOf(frame));\n\nconst voided = new Set();\nframes.filter(isTomb).forEach((frame) => {\n  arr(frame.fields.find((f) => f.type === 'time')).forEach((t) => voided.add(+t));\n});\n\nconst key = (d) => d.getFullYear() + '-' +\n  String(d.getMonth() + 1).padStart(2, '0') + '-' +\n  String(d.getDate()).padStart(2, '0');\n\n// Sum every surviving plank into its LOCAL calendar day.\nconst secs = new Map();\nconst sets = new Map();\nframes.filter((f) => !isTomb(f)).forEach((frame) => {\n  const ts = arr(frame.fields.find((f) => f.type === 'time'));\n  const vs = arr(frame.fields.find((f) => f.type === 'number'));\n  for (let i = 0; i < ts.length; i++) {\n    const v = vs[i];\n    if (v === null || v === undefined || Number.isNaN(v) || v <= 0) { continue; }\n    if (voided.has(+ts[i])) { continue; }   // retracted by a tombstone\n    const k = key(new Date(ts[i]));\n    secs.set(k, (secs.get(k) || 0) + v);\n    sets.set(k, (sets.get(k) || 0) + 1);\n  }\n});\n\n// Every day in the picker's range gets a cell, because a day with no plank logged IS a\n// 0-minute day and has to read red. The steps calendar can leave gaps; this one can't.\n// Ends today: a future day hasn't been missed yet.\nconst tr = data.timeRange;\nconst now = Date.now();\nconst fromMs = (tr && tr.from) ? +tr.from : now - 30 * 86400000;\nconst toMs = Math.min((tr && tr.to) ? +tr.to : now, now);\nconst points = [];\nconst d = new Date(fromMs);\nd.setHours(12, 0, 0, 0);   // noon steps cleanly across DST changes\nconst end = key(new Date(toMs));\nfor (let guard = 0; guard < 4000; guard++) {\n  const k = key(d);\n  points.push([k, secs.get(k) || 0, sets.get(k) || 0]);\n  if (k >= end) { break; }\n  d.setDate(d.getDate() + 1);\n}\nif (!points.length) { return {}; }\nconst range = [points[0][0], points[points.length - 1][0]];\n\nconst fmt = (s) => {\n  s = Math.round(s);\n  if (s === 0) { return 'none'; }\n  const m = Math.floor(s / 60), r = s % 60;\n  return m ? (r ? m + 'm ' + r + 's' : m + 'm') : r + 's';\n};\n\nconst c = (theme && theme.colors) ? theme.colors : null;\nconst ink   = c ? c.text.primary   : '#ccc';\nconst ink2  = c ? c.text.secondary : '#888';\nconst gap   = c ? c.background.primary   : '#111217';\n\nreturn {\n  animationDuration: 250,\n  animationDurationUpdate: 250,\n  animationEasing: 'cubicOut',\n  animationEasingUpdate: 'cubicOut',\n  tooltip: {\n    formatter: (p) => p.value[0] + '<br/><b>' + fmt(p.value[1]) + '</b> planked' +\n      (p.value[2] > 1 ? ' over ' + p.value[2] + ' sets' : '')\n  },\n  // Same four bands as the steps calendar, already validated. Thresholds are seconds.\n  visualMap: {\n    type: 'piecewise',\n    // A column on the right, beside the grid rather than under it: a legend row below\n    // costs a band of height the whole panel then has to be tall enough to hold.\n    orient: 'vertical',\n    right: 0,\n    top: 'middle',\n    itemWidth: 10,\n    itemHeight: 10,\n    itemGap: 5,\n    dimension: 1,\n    textStyle: { color: ink2, fontSize: 11 },\n    pieces: [\n      { lt: 60,              color: '#E5484D', label: '< 1m' },\n      { gte: 60,  lt: 120,   color: '#F5A524', label: '1-2m' },\n      { gte: 120, lt: 240,   color: '#6FD3A0', label: '2-4m' },\n      { gte: 240,            color: '#15784F', label: '4m+' }\n    ]\n  },\n  calendar: {\n    // Rows stretch to whatever height the panel has. A fixed cell height left the grid\n    // floating above a band of empty space with the legend stranded at the bottom.\n    top: 20,\n    bottom: 2,\n    left: 36,\n    right: 72,\n    cellSize: ['auto', 'auto'],\n    range: range,\n    itemStyle: { color: gap, borderColor: gap, borderWidth: 2 },\n    splitLine: { show: false },\n    yearLabel: { show: false },\n    dayLabel: { firstDay: 1, color: ink2, nameMap: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] },\n    monthLabel: { color: ink }\n  },\n  series: [{\n    type: 'heatmap',\n    coordinateSystem: 'calendar',\n    data: points,\n    itemStyle: { borderRadius: 2, borderColor: gap, borderWidth: 2 }\n  }]\n};\n"
+      }
     },
     {
       "id": 8,
@@ -337,7 +395,7 @@
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 30
       },
       "transparent": true,
       "targets": [

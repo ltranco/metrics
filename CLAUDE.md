@@ -238,6 +238,15 @@ These all cost real debugging time. Do not rediscover them.
     `module.js` has zero references to `thresholds`/`fieldConfig`/`color.mode`;
     `colorScheme` is a single-hue ramp. It's installed but unused.
 
+14. **Anything that replays gains tombstones must read raw samples, not a grid.** Query
+    `metric[$__range]` as an **instant** query: VM returns every stored sample at its real
+    millisecond timestamp, and Grafana passes them through as ordinary frames. The old
+    `sum_over_time(...[$__interval])` range queries matched tombstones per *bucket*, which
+    voided an edited set entirely (the rewrite lands 1ms after its tombstone, same bucket) and
+    both sets when one of two in an hour was deleted. Worse, a range query has no grid point
+    after `now`, so **anything logged in the last hour was invisible** — a 21:07 plank showed
+    nothing until 22:00. Daily HealthKit data at local midnight doesn't care; per-set data does.
+
 ## Dashboards
 
 Two of them. `proto` is the "my life" board (steps, weight). `gains` is the workout log,
@@ -252,28 +261,22 @@ Don't go granting roles; wait and retry.
 
 ### `gains`
 
-Per-set data, not daily rollups — so `sum_over_time` is the true total and
-`count_over_time` the true set count, with no revision double-counting.
+Three ECharts panels, one per measurement kind, each a line per exercise summed into **local**
+calendar days in JS:
 
-| Panel | |
-| --- | --- |
-| Volume / Loaded sets / Time under tension / Reps | stats over a trailing 24h |
-| `$exercise` — volume | `sum_over_time(health_${exercise}_volume[1d])`, **repeated per exercise** |
-| `$exercise` — top set | `max_over_time(health_${exercise}_weight[1d])`, repeated |
-| Raw samples | table, `seriesToRows` — one row per stored sample |
+| Panel | Query A (instant) | |
+| --- | --- | --- |
+| Volume | `{__name__=~"health_.+_volume"}[$__range]` | kg |
+| Reps | `{__name__=~"health_.+_reps"}[$__range]` | |
+| Time | `{__name__=~"health_.+_seconds"}[$__range]` | |
 
-The exercise variable is `label_values(__name__)` filtered by `/^health_(.+)_volume$/`, with
-`refresh: 2` (on time-range change) so it doesn't hit trap 5's 24h default.
+Every panel also pulls `{__name__=~"health_.+_deleted"}[$__range]` as query B and drops any
+sample a tombstone names at `prefix@timestamp` — the same rule as `reconstruct()` in the app.
+Both are raw-sample instant queries; see trap 14 for why a grid can't do this.
 
-**Per-exercise panels repeat rather than stacking many series in one chart.** Exercise count is
-unbounded — 173 in the app's catalog — and colour-cycled series stop being distinguishable well
-before that. Small multiples keep identity in the panel title instead of the palette.
-
-Series colours `#3987e5` (volume) and `#199e70` (top set) were validated with the `dataviz`
-skill's `validate_palette.js` against Grafana's dark panel surface `#181b1f`: all checks pass,
-all-pairs CVD ΔE 19.6. On a light surface the aqua sits at 2.82:1 contrast, under the 3:1 bar —
-the axis labels and the raw-samples table are the required relief. Don't eyeball replacements;
-re-run the script.
+Series colours come from the `dataviz` skill's validated categorical palette (dark surface),
+starting `#3987e5`; past eight exercises the hues repeat and the legend and tooltip carry
+identity. Don't eyeball replacements; re-run `validate_palette.js`.
 
 ### `proto`
 
@@ -287,6 +290,19 @@ picker; **History** follows it.
 | Weekly steps | ECharts | Mon-start calendar weeks summed in JS, 70K markLine |
 | Weight (lbs) | ECharts | zeros filtered, gradient area |
 | Step calendar | ECharts | GitHub-style contribution grid |
+| Plank calendar | ECharts | same grid, daily plank time from gains |
+
+**The two calendars share one layout, keep them in step.** `cellSize: ['auto', 'auto']` so rows
+stretch to the panel height, and the legend is a vertical column on the right. The original
+fixed 15px rows plus a bottom-anchored legend left a band of dead space between them at any
+panel height; now both panels are `h: 5` with nothing to spare.
+
+**Plank calendar** reads `health_plank_seconds[$__range]` and `health_plank_deleted[$__range]`
+as raw instant queries (trap 14), sums surviving sets per local day, and emits a cell for
+**every** day from the picker's start to today — unlike steps, a day with nothing logged *is* a
+0-minute day and must read red. So a range reaching back before gains existed shows red there
+too. Bands, in seconds: `<60` red, `60–119` yellow, `120–239` green, `240+` dark green (the
+calendar-band palette below). Side plank is a different exercise and isn't counted.
 
 **Weekly buckets are computed in JavaScript, deliberately.** MetricsQL has no
 calendar-week bucketing, and a `[7d]` step aligns to Unix epoch multiples —
@@ -322,7 +338,7 @@ it reads red early in the week even when on pace. The user knows; they said
 
 ## Verify before you ship
 
-Three habits that each caught a real bug here:
+Habits that each caught a real bug here:
 
 - **Run queries against live VM over SSH before wiring them into a panel.**
   `ssh linode` then `curl -s -G localhost:8428/api/v1/query_range ...`.
@@ -332,8 +348,17 @@ Three habits that each caught a real bug here:
   guessing its option keys.** `grep -oE 'path:\s*"[a-zA-Z]+"'` gives the real
   list; it found two wrong keys and settled the threshold question outright.
 
-There is no browser session logged into Grafana available, so rendering cannot
-be verified directly — ask the user for a screenshot when appearance matters.
+- **Fetch real frames through Grafana itself.** `POST /api/ds/query` with the `.grafana-token`
+  bearer and datasource uid `dft9acuz7p05cd` returns exactly what a panel receives — this is
+  how the raw-sample instant query was proven before any panel used it.
+
+There is no browser session logged into Grafana, but ECharts panels can be rendered offline:
+`npm i echarts` in the scratchpad, call the panel's `getOption` with a fake `context` over those
+frames, then `echarts.init(null, null, {renderer: 'svg', ssr: true, width, height})` and
+`renderToSVGString()`. Size it as Grafana does — `h*30 + (h-1)*8` px, minus ~32 header and 16
+padding. **End the script with `process.exit(0)`**: animation timers keep node alive forever.
+Screenshot the SVG with the chrome-devtools MCP; headless Chrome and `qlmanage` both hang here.
+This is how the calendar gap was found and fixed. Ask for a real screenshot when it matters.
 
 ## Ingest format
 
