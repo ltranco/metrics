@@ -12,7 +12,7 @@ APP_DIR="/opt/metrics"
 BACKUP_DIR="/opt/metrics-backups"
 VM_DATA="/var/lib/docker/volumes/metrics_vmdata/_data"
 VM_URL="http://127.0.0.1:8428"
-REMOTE="gdrive:metrics-backups"
+REMOTE="gdrive:backups/metrics"
 KEEP_DAYS=30
 LOG_FILE="/var/log/metrics-backup.log"
 
@@ -96,7 +96,9 @@ log "Archive holds $TAR_FILES files; snapshot has $SNAP_FILES"
 [ "$TAR_FILES" -ge "$SNAP_FILES" ] || die "archive holds $TAR_FILES of $SNAP_FILES files, refusing to call it a backup"
 
 log "Uploading to $REMOTE..."
-rclone copy "$BACKUP_DIR/$FILE" "$REMOTE" || die "rclone upload failed (archive kept locally)"
+# The whole folder, not just tonight's file: rclone skips what Drive already has, so an
+# archive stranded by a failed upload goes up on the next night that works.
+rclone copy "$BACKUP_DIR" "$REMOTE" --include 'metrics_vm_*.tar.gz' || die "rclone upload failed (archive kept locally)"
 log "Upload complete"
 
 log "Pruning local archives older than ${KEEP_DAYS}d..."
